@@ -15,12 +15,17 @@ async function obtenerNoticiasElUniversal() {
             const link = $(el).find('a').attr('href');
             const resumen = $(el).find('p').text().trim();
 
+            // Extrae la fecha del span con clase sc__author--date si existe en el HTML
+            const fechaRaw = $(el).find('span.sc__author--date').text();
+            const fecha = fechaRaw.match(/\d{2}\/\d{2}\/\d{4}/)?.[0] || null;
+
             if (titulo.toLowerCase().includes("incendio") || resumen.toLowerCase().includes("forestal")) {
                 noticias.push({
                     fuente: 'El Universal',
                     titulo,
                     link: link.startsWith('http') ? link : `https://www.eluniversal.com.mx${link}`,
-                    resumen
+                    resumen,
+                    fecha
                 });
             }
         });
@@ -31,6 +36,7 @@ async function obtenerNoticiasElUniversal() {
         return [];
     }
 }
+
 
 async function obtenerNoticiasMilenio() {
     const url = 'https://www.milenio.com/temas/incendios-forestales';
@@ -109,8 +115,6 @@ async function buscarNoticiasAPI() {
         return [];
     }
 }
-
-
 
 module.exports = {
     obtenerNoticias: async () => {

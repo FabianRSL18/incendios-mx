@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mapa de Incendios Forestales en México</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f9f9f9;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    #mapa {
+      height: 600px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .legend {
+      line-height: 18px;
+      color: #555;
+      background: white;
+      padding: 6px 8px;
+      border-radius: 5px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.2);
+    }
+
+    .legend i {
+      width: 18px;
+      height: 18px;
+      float: left;
+      margin-right: 8px;
+      opacity: 0.7;
+    }
+  </style>
+</head>
+<body>
+  <h1>Mapa de Incendios Forestales por Estado</h1>
+  <div id="mapa"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+  <script>
+    const mapa = L.map('mapa').setView([23.6345, -102.5528], 5);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: 'Datos: OpenStreetMap + Web Scraping',
+      maxZoom: 8,
+      minZoom: 4
+    }).addTo(mapa);
+
+    function getColor(cantidad) {
+      return cantidad > 15 ? '#800026' :
+             cantidad > 10 ? '#BD0026' :
+             cantidad > 5  ? '#E31A1C' :
+             cantidad > 2  ? '#FC4E2A' :
+             cantidad > 0  ? '#FD8D3C' :
+                             '#f0f0f0';
+    }
+
+    function style(feature, rankingMap) {
+      const estado = feature.properties.NOM_ENT.toLowerCase();
+      const cantidad = rankingMap[estado] || 0;
+      return {
+        fillColor: getColor(cantidad),
+        weight: 1,
+        color: '#555',
+        fillOpacity: cantidad > 0 ? 0.75 : 0.2
+      };
+    }
+
+    Promise.all([
+      fetch('/data/mexico.json').then(res => res.json()),
+      fetch('http://localhost:3000/api/ranking-estados').then(res => res.json())
+    ])
+    .then(([geojson, ranking]) => {
+      const rankingMap = {};
+      ranking.forEach(d => {
+        rankingMap[d.estado.toLowerCase()] = d.cantidad;
+      });
+
+      L.geoJSON(geojson, {
+        style: feature => style(feature, rankingMap),
+        onEachFeature: (feature, layer) => {
+          const estado = feature.properties.NOM_ENT;
+          const cantidad = rankingMap[estado.toLowerCase()] || 0;
+          layer.bindPopup(`<strong>${estado}</strong><br>Noticias de incendios: ${cantidad}`);
+        }
+      }).addTo(mapa);
+
+      // Leyenda
+      const legend = L.control({ position: 'bottomright' });
+      legend.onAdd = function () {
+        const div = L.DomUtil.create('div', 'legend');
+        const grades = [0, 1, 3, 6, 11, 16];
+        for (let i = 0; i < grades.length - 1; i++) {
+          div.innerHTML +=
+            '<i style="background:' + getColor(grades[i + 1]) + '"></i> ' +
+            `${grades[i]}&ndash;${grades[i + 1] - 1}<br>`;
+        }
+        div.innerHTML += '<i style="background:' + getColor(16) + '"></i> 16+';
+        return div;
+      };
+      legend.addTo(mapa);
+    })
+    .catch(err => {
+      console.error("Error cargando mapa o datos:", err);
+    });
+  </script>
+</body>
+</html>
+
