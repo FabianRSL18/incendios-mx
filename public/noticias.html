@@ -23,6 +23,14 @@
         .then(res => res.json())
         .then(data => {
             const contenedor = document.getElementById('noticias');
+
+            // Validar si es un arreglo
+            if (!Array.isArray(data)) {
+            contenedor.innerHTML = "<p>Ocurrió un error en el servidor. Intenta más tarde.</p>";
+            console.error("⚠️ Respuesta inesperada:", data);
+            return;
+            }
+
             if (data.length === 0) {
             contenedor.innerHTML = "<p>No se encontraron noticias recientes.</p>";
             } else {
@@ -41,8 +49,9 @@
         })
         .catch(err => {
             document.getElementById('noticias').innerHTML = "<p>Error al cargar noticias.</p>";
-            console.error(err);
+            console.error("❌ Error en fetch:", err);
         });
+
     </script>
 </body>
 </html>

@@ -18,6 +18,7 @@ app.get('/api/incendios', async (req, res) => {
         const data = await obtenerNoticias();
         res.json(data);
     } catch (error) {
+        console.error('❌ Error interno en /api/incendios:', error);
         res.status(500).json({ error: 'Error al obtener noticias' });
     }
 });
