@@ -5,6 +5,8 @@ const fs = require('fs');
 const path = require('path');
 const { obtenerNoticias } = require('./scraper/scraper');
 const { obtenerRankingPorEstado } = require('./db/db');
+const { Noticia } = require('./db/db');
+
 
 const app = express();
 const PORT = 3000;
@@ -46,6 +48,31 @@ app.get('/api/ranking-estados', async (req, res) => {
     }
 });
 
+// Normalizar nombres para coincidencia
+const normalizarEstado = (nombre) => {
+    const mapaNombres = {
+        "veracruz": "Veracruz De Ignacio De La Llave",
+        "cdmx": "CDMX",
+        "ciudad de méxico": "CDMX",
+        "estado de méxico": "Estado de México",
+        // puedes agregar más normalizaciones si detectas más inconsistencias
+    };
+    const clave = nombre.toLowerCase();
+    return mapaNombres[clave] || nombre;
+};
+
+app.get('/api/noticias-por-estado/:estado', async (req, res) => {
+    try {
+        const estadoRaw = req.params.estado;
+        const estado = normalizarEstado(estadoRaw);
+        const noticias = await Noticia.find({ estado });
+        res.json(noticias);
+    } catch (error) {
+        console.error('❌ Error en noticias-por-estado:', error);
+        res.status(500).json({ error: 'Error obteniendo noticias' });
+    }
+});
+
 // Nuevo endpoint para estadísticas generadas por R
 app.get('/api/estadisticas', (req, res) => {
     // Ejecutamos el script de R
@@ -76,4 +103,3 @@ app.get('/api/estadisticas', (req, res) => {
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });
-

@@ -1,14 +1,17 @@
+//Se manda a llamar librerias
 const mongoose = require('mongoose');
 
+//Conectamos a nuestra base / de no tener se crea
 mongoose.connect('mongodb://127.0.0.1:27017/incendios');
 
-
+//Esquema en que se insertaran las noticias en mongo
 const noticiaSchema = new mongoose.Schema({
     titulo: String,
     resumen: String,
     fuente: String,
     link: String,
     estado: String,
+    municipio: String, 
     fecha: String,
     keywords: [String]
 });

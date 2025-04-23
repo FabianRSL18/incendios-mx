@@ -1,49 +1,49 @@
-const ubicacionesMX = [
-    { estado: "Aguascalientes", patrones: [/aguascalientes/i] },
-    { estado: "Baja California", patrones: [/baja\s?california(?!\s?sur)/i] },
-    { estado: "Baja California Sur", patrones: [/baja\s?california\s?sur/i] },
-    { estado: "Campeche", patrones: [/campeche/i] },
-    { estado: "CDMX", patrones: [/ciudad\s+de\s+m[eé]xico|cdmx|d\.f\./i] },
-    { estado: "Chiapas", patrones: [/chiapas/i] },
-    { estado: "Chihuahua", patrones: [/chihuahua/i] },
-    { estado: "Coahuila", patrones: [/coahuila/i] },
-    { estado: "Colima", patrones: [/colima/i] },
-    { estado: "Durango", patrones: [/durango/i] },
-    { estado: "Estado de México", patrones: [/estado\s+de\s+m[eé]xico/i] },
-    { estado: "Guanajuato", patrones: [/guanajuato/i] },
-    { estado: "Guerrero", patrones: [/guerrero/i] },
-    { estado: "Hidalgo", patrones: [/hidalgo/i] },
-    { estado: "Jalisco", patrones: [/jalisco/i] },
-    { estado: "Michoacán", patrones: [/michoac[aá]n/i] },
-    { estado: "Morelos", patrones: [/morelos/i] },
-    { estado: "Nayarit", patrones: [/nayarit/i] },
-    { estado: "Nuevo León", patrones: [/nuevo\s+le[oó]n/i] },
-    { estado: "Oaxaca", patrones: [/oaxaca/i] },
-    { estado: "Puebla", patrones: [/puebla/i] },
-    { estado: "Querétaro", patrones: [/quer[eé]taro/i] },
-    { estado: "Quintana Roo", patrones: [/quintana\s+roo/i] },
-    { estado: "San Luis Potosí", patrones: [/san\s+luis\s+potos[ií]/i] },
-    { estado: "Sinaloa", patrones: [/sinaloa/i] },
-    { estado: "Sonora", patrones: [/sonora/i] },
-    { estado: "Tabasco", patrones: [/tabasco/i] },
-    { estado: "Tamaulipas", patrones: [/tamaulipas/i] },
-    { estado: "Tlaxcala", patrones: [/tlaxcala/i] },
-    { estado: "Veracruz", patrones: [/veracruz(?!ana)/i] },
-    { estado: "Yucatán", patrones: [/yucat[aá]n/i] },
-    { estado: "Zacatecas", patrones: [/zacatecas/i] }
-];
+const fs = require('fs');
+const path = require('path');
 
-function detectarEstado(texto) {
-    for (const ubicacion of ubicacionesMX) {
-        for (const patron of ubicacion.patrones) {
-            if (patron.test(texto)) {
-            return ubicacion.estado;
-            }
-        }
+// Cargar y parsear el archivo GeoJSON de municipios
+const geoData = JSON.parse(
+    fs.readFileSync(path.join(__dirname, '../public/data/mexico.json'), 'utf8')
+);
+
+// Crear una lista de municipios con su estado
+const municipios = geoData.features.map(f => ({
+    municipio: f.properties.NOMGEO.toLowerCase(),
+    estado: f.properties.NOM_ENT.toLowerCase()
+}));
+
+// Función principal
+function detectarUbicacion(texto) {
+    const textoLower = texto.toLowerCase();
+
+    // Buscar municipio
+    const municipioCoincidente = municipios.find(m => textoLower.includes(m.municipio));
+    if (municipioCoincidente) {
+        return {
+        estado: capitalizar(municipioCoincidente.estado),
+        municipio: capitalizar(municipioCoincidente.municipio)
+        };
     }
-    return null;
+
+    // Buscar solo por estado
+    const estados = [...new Set(municipios.map(m => m.estado))];
+    const estadoCoincidente = estados.find(e => textoLower.includes(e));
+    if (estadoCoincidente) {
+        return {
+        estado: capitalizar(estadoCoincidente),
+        municipio: null
+        };
+    }
+
+    return { estado: null, municipio: null };
 }
 
-module.exports = {
-    detectarEstado
-};
+// Función para capitalizar texto
+function capitalizar(texto) {
+    return texto
+        .split(' ')
+        .map(p => p.charAt(0).toUpperCase() + p.slice(1))
+        .join(' ');
+}
+
+module.exports = { detectarUbicacion };

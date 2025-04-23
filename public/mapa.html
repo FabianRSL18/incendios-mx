@@ -41,12 +41,66 @@
       margin-right: 8px;
       opacity: 0.7;
     }
+
+    .panel {
+      position: absolute;
+      top: 80px;
+      right: 20px;
+      width: 300px;
+      max-height: 80%;
+      overflow-y: auto;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      padding: 15px;
+      z-index: 1000;
+      display: none;
+    }
+
+    .panel button {
+      background: transparent;
+      border: none;
+      font-size: 18px;
+      float: right;
+      cursor: pointer;
+    }
+
+    .panel h2 {
+      margin-top: 0;
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+
+    .panel ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .panel ul li {
+      margin-bottom: 10px;
+    }
+
+    .panel ul li a {
+      color: #0077cc;
+      text-decoration: none;
+    }
+
+    .panel ul li a:hover {
+      text-decoration: underline;
+    }
+
   </style>
 </head>
 <body>
   <h1>Mapa de Incendios Forestales por Estado</h1>
   <div id="mapa"></div>
-
+  <div id="panel-noticias" class="panel">
+    <button onclick="cerrarPanel()">✖</button>
+    <h2 id="titulo-estado"></h2>
+    <ul id="lista-noticias"></ul>
+  </div>
+  
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
   <script>
     const mapa = L.map('mapa').setView([23.6345, -102.5528], 5);
@@ -92,8 +146,39 @@
         onEachFeature: (feature, layer) => {
           const estado = feature.properties.NOM_ENT;
           const cantidad = rankingMap[estado.toLowerCase()] || 0;
+          
           layer.bindPopup(`<strong>${estado}</strong><br>Noticias de incendios: ${cantidad}`);
+
+          layer.on('click', () => {
+            fetch(`/api/noticias-por-estado/${encodeURIComponent(estado)}`)
+              .then(res => res.json())
+              .then(noticias => {
+                const panel = document.getElementById('panel-noticias');
+                const titulo = document.getElementById('titulo-estado');
+                const lista = document.getElementById('lista-noticias');
+
+                titulo.textContent = `Noticias de ${estado}`;
+                lista.innerHTML = '';
+
+                if (noticias.length === 0) {
+                  lista.innerHTML = '<li>No hay noticias disponibles.</li>';
+                } else {
+                  noticias.forEach(n => {
+                    const li = document.createElement('li');
+                    const link = document.createElement('a');
+                    link.href = n.link;
+                    link.textContent = n.titulo;
+                    link.target = '_blank';
+                    li.appendChild(link);
+                    lista.appendChild(li);
+                  });
+                }
+
+                panel.style.display = 'block';
+              });
+          });
         }
+
       }).addTo(mapa);
 
       // Leyenda
@@ -114,7 +199,12 @@
     .catch(err => {
       console.error("Error cargando mapa o datos:", err);
     });
+    
+    function cerrarPanel() {
+      document.getElementById('panel-noticias').style.display = 'none';
+      document.getElementById('lista-noticias').innerHTML = '';
+      document.getElementById('titulo-estado').textContent = '';
+    }
   </script>
 </body>
 </html>
-
