@@ -114,6 +114,29 @@ app.post('/api/reportar', async (req, res) => {
     }
 });
 
+// Endpoint para obtener reportes ciudadanos
+app.get('/api/reportes', async (req, res) => {
+    try {
+        const reportes = await Reporte.find();
+        res.json(reportes);
+    } catch (error) {
+        console.error('❌ Error al obtener reportes:', error);
+        res.status(500).json({ error: 'Error al obtener reportes' });
+    }
+});
+
+// Endpoint para devolver los reportes en el mapa
+app.get('/api/reportes', async (req, res) => {
+    try {
+        const reportes = await Reporte.find().sort({ fecha: -1 }).limit(100);
+        res.json(reportes);
+    } catch (error) {
+        console.error('❌ Error obteniendo reportes:', error);
+        res.status(500).json({ error: 'Error al obtener reportes' });
+    }
+});
+
+
 // Iniciar servidor
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en http://localhost:${PORT}`);
