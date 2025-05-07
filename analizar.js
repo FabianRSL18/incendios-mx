@@ -22,7 +22,7 @@ async function analizarNoticiasConR() {
         await mongoose.connect('mongodb://127.0.0.1:27017/incendios');
         console.log('✅ Conectado a MongoDB');
 
-        const noticias = await Noticia.find();
+        const noticias = await obtenerNoticias(); // Usar scraper
 
         const noticiasEnriquecidas = noticias.map(n => {
             const textoCompleto = `${n.titulo} ${n.resumen}`;
@@ -43,15 +43,23 @@ async function analizarNoticiasConR() {
         fs.writeFileSync('noticias_estado.json', JSON.stringify(noticiasEnriquecidas, null, 2));
 
         let nuevas = 0;
+        let actualizadas = 0;
+
         for (const noticia of noticiasEnriquecidas) {
-            const yaExiste = await Noticia.findOne({ link: noticia.link });
-            if (!yaExiste) {
+            const existente = await Noticia.findOne({ link: noticia.link });
+
+            if (!existente) {
                 await Noticia.create(noticia);
                 nuevas++;
+            } else {
+                await Noticia.updateOne({ link: noticia.link }, { $set: noticia });
+                actualizadas++;
             }
         }
 
-        console.log(`🟢 Se insertaron ${nuevas} noticias nuevas en MongoDB`);
+        console.log(`🆕 Noticias nuevas insertadas: ${nuevas}`);
+        console.log(`♻️ Noticias actualizadas: ${actualizadas}`);
+        console.log(`📦 Total procesadas: ${nuevas + actualizadas}`);
 
         exec('Rscript R/analisis_incendios.R noticias_estado.json', (error, stdout, stderr) => {
             if (error) {

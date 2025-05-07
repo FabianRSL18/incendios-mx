@@ -136,7 +136,6 @@ app.get('/api/reportes', async (req, res) => {
     }
 });
 
-
 // Iniciar servidor
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en http://localhost:${PORT}`);

@@ -131,10 +131,10 @@
             const estado = feature.properties.NOM_ENT.toLowerCase();
             const cantidad = rankingMap[estado] || 0;
             return {
-            fillColor: getColor(cantidad),
-            weight: 1,
-            color: '#555',
-            fillOpacity: cantidad > 0 ? 0.75 : 0.2
+                fillColor: getColor(cantidad),
+                weight: 1,
+                color: '#555',
+                fillOpacity: cantidad > 0 ? 0.75 : 0.2
             };
         }
     
@@ -227,10 +227,10 @@
         // Checkbox para alternar la visibilidad
         document.getElementById('toggleReportes').addEventListener('change', function () {
             if (this.checked) {
-            mapa.addLayer(capaReportes);
-            cargarReportesCiudadanos();
+                mapa.addLayer(capaReportes);
+                cargarReportesCiudadanos();
             } else {
-            mapa.removeLayer(capaReportes);
+                mapa.removeLayer(capaReportes);
             }
         });
     
