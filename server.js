@@ -3,18 +3,20 @@ const cors = require('cors');
 const { exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const { obtenerNoticias } = require('./scraper/scraper');
-const { obtenerRankingPorEstado } = require('./db/db');
-const { Noticia } = require('./db/db');
+const mongoose = require('mongoose');
 
+const { obtenerNoticias } = require('./scraper/scraper');
+const { obtenerRankingPorEstado, Noticia, Reporte } = require('./db/db');
 
 const app = express();
 const PORT = 3000;
 
+// Middleware
 app.use(cors());
+app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Endpoint para obtener noticias
+// Obtener noticias
 app.get('/api/incendios', async (req, res) => {
     try {
         const data = await obtenerNoticias();
@@ -25,7 +27,7 @@ app.get('/api/incendios', async (req, res) => {
     }
 });
 
-// Endpoint para ejecutar análisis en R
+// Ejecutar análisis en R (mapa)
 app.get('/api/analisis-r', (req, res) => {
     exec('Rscript R/analisis_incendios.R', (error, stdout, stderr) => {
         if (error) {
@@ -37,7 +39,7 @@ app.get('/api/analisis-r', (req, res) => {
     });
 });
 
-// Endpoint para ranking por estado
+// Ranking por estado (mapa)
 app.get('/api/ranking-estados', async (req, res) => {
     try {
         const ranking = await obtenerRankingPorEstado();
@@ -48,19 +50,20 @@ app.get('/api/ranking-estados', async (req, res) => {
     }
 });
 
-// Normalizar nombres para coincidencia
+// Normalizar nombres de estados
 const normalizarEstado = (nombre) => {
     const mapaNombres = {
         "veracruz": "Veracruz De Ignacio De La Llave",
         "cdmx": "CDMX",
         "ciudad de méxico": "CDMX",
-        "estado de méxico": "Estado de México",
-        // puedes agregar más normalizaciones si detectas más inconsistencias
+        "estado de méxico": "Estado de México"
+        // Puedes agregar más si lo deseas
     };
     const clave = nombre.toLowerCase();
     return mapaNombres[clave] || nombre;
 };
 
+// Noticias por estado
 app.get('/api/noticias-por-estado/:estado', async (req, res) => {
     try {
         const estadoRaw = req.params.estado;
@@ -73,9 +76,8 @@ app.get('/api/noticias-por-estado/:estado', async (req, res) => {
     }
 });
 
-// Nuevo endpoint para estadísticas generadas por R
+// Estadísticas generadas por R (para Chart.js)
 app.get('/api/estadisticas', (req, res) => {
-    // Ejecutamos el script de R
     exec('Rscript R/estadisticas_incendios.R', (error, stdout, stderr) => {
         if (error) {
             console.error('Error ejecutando R:', error.message);
@@ -100,6 +102,19 @@ app.get('/api/estadisticas', (req, res) => {
     });
 });
 
+// API para guardar reportes de usuarios
+app.post('/api/reportar', async (req, res) => {
+    try {
+        const nuevo = new Reporte(req.body);
+        await nuevo.save();
+        res.status(201).json({ mensaje: 'Reporte recibido' });
+    } catch (error) {
+        console.error('❌ Error al guardar el reporte:', error);
+        res.status(500).json({ error: 'Error en el servidor' });
+    }
+});
+
+// Iniciar servidor
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });

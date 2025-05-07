@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Reportar Incendio</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background: #f5f5f5;
+        }
+        form {
+            max-width: 500px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        input, textarea, button {
+            width: 100%;
+            margin-bottom: 15px;
+            padding: 10px;
+            font-size: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <h2>Reportar posible incendio forestal</h2>
+    <form id="reporteForm">
+        <textarea id="descripcion" placeholder="Describe lo que viste..." required></textarea>
+        <input type="hidden" id="latitud">
+        <input type="hidden" id="longitud">
+        <button type="submit">Enviar Reporte</button>
+    </form>
+
+    <script>
+        let latitud = null;
+        let longitud = null;
+
+        // Obtener coordenadas al cargar la página
+        window.onload = function () {
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(
+            function (position) {
+                latitud = position.coords.latitude;
+                longitud = position.coords.longitude;
+                document.getElementById('latitud').value = latitud;
+                document.getElementById('longitud').value = longitud;
+                console.log('📍 Coordenadas listas:', latitud, longitud);
+            },
+            function (error) {
+                alert("Error al obtener ubicación: " + error.message);
+            }
+            );
+        } else {
+            alert("Tu navegador no soporta geolocalización.");
+        }
+        };
+
+        // Manejar envío del formulario
+        document.getElementById('reporteForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const descripcion = document.getElementById('descripcion').value;
+
+            if (!latitud || !longitud) {
+                alert("No se pudo obtener la ubicación. Intenta de nuevo.");
+                return;
+            }
+
+            const coords = {
+                lat: latitud,
+                lng: longitud
+            };
+
+            const response = await fetch('/api/reportar', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ descripcion, coordenadas: coords })
+            });
+
+            const data = await response.json();
+            console.log('✅ Reporte enviado:', data);
+            alert("Gracias por tu reporte.");
+            this.reset();
+        });
+    </script>
+</body>
+</html>
+

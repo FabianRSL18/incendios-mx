@@ -1,23 +1,36 @@
-//Se manda a llamar librerias
+// Se manda a llamar librerias
 const mongoose = require('mongoose');
 
-//Conectamos a nuestra base / de no tener se crea
+// Conectamos a nuestra base / de no tener se crea
 mongoose.connect('mongodb://127.0.0.1:27017/incendios');
 
-//Esquema en que se insertaran las noticias en mongo
+// Esquema en que se insertaran las noticias en mongo
 const noticiaSchema = new mongoose.Schema({
     titulo: String,
     resumen: String,
     fuente: String,
     link: String,
     estado: String,
-    municipio: String, 
+    municipio: String,
     fecha: String,
     keywords: [String]
 });
 
 const Noticia = mongoose.model('Noticia', noticiaSchema);
 
+// Nuevo esquema para los reportes de usuarios
+const reporteSchema = new mongoose.Schema({
+    descripcion: String,
+    coordenadas: {
+        lat: Number,
+        lng: Number
+    },
+    fecha: { type: Date, default: Date.now }
+});
+
+const Reporte = mongoose.model('Reporte', reporteSchema);
+
+// Ranking por estado
 async function obtenerRankingPorEstado() {
     const resultado = await Noticia.aggregate([
         { $match: { estado: { $ne: null } } },
@@ -28,4 +41,10 @@ async function obtenerRankingPorEstado() {
     return resultado.map(r => ({ estado: r._id, cantidad: r.cantidad }));
 }
 
-module.exports = { Noticia, obtenerRankingPorEstado };
+// Exportar los modelos
+module.exports = {
+    Noticia,
+    Reporte,
+    obtenerRankingPorEstado
+};
+
