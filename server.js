@@ -3,8 +3,8 @@ const cors = require('cors');
 const { exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const mongoose = require('mongoose');
 const multer = require('multer');
+const fetch = require('node-fetch');
 
 const { obtenerNoticias } = require('./scraper/scraper');
 const { obtenerRankingPorEstado, Noticia, Reporte } = require('./db/db');
@@ -109,21 +109,60 @@ app.get('/api/estadisticas', (req, res) => {
     });
 });
 
-// API para guardar reportes de usuarios
+// Función para obtener estado y municipio a partir de coordenadas
+async function obtenerUbicacion(lat, lng) {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10&addressdetails=1`;
+    const response = await fetch(url, {
+        headers: { 'User-Agent': 'incendios-mx-reporter' }
+    });
+    const data = await response.json();
+
+    return {
+        estado: data.address?.state || null,
+        municipio: data.address?.county || data.address?.city || null
+    };
+}
+
+// Endpoint actualizado con reverse geocoding
 app.post('/api/reportar', upload.single('imagen'), async (req, res) => {
     try {
+        const lat = parseFloat(req.body.lat);
+        const lng = parseFloat(req.body.lng);
+
+        const ubicacion = await obtenerUbicacion(lat, lng);
+
         const nuevo = new Reporte({
             descripcion: req.body.descripcion,
-            coordenadas: {
-                lat: parseFloat(req.body.lat),
-                lng: parseFloat(req.body.lng)
-            },
-            imagen: req.file ? `/uploads/${req.file.filename}` : null
+            coordenadas: { lat, lng },
+            imagen: req.file ? `/uploads/${req.file.filename}` : null,
+            estado: ubicacion.estado,
+            municipio: ubicacion.municipio
         });
+
         await nuevo.save();
-        res.status(201).json({ mensaje: 'Reporte recibido con imagen' });
+        res.status(201).json({ mensaje: 'Reporte recibido con ubicación', id: nuevo._id });
     } catch (error) {
         console.error('❌ Error al guardar el reporte:', error);
+        res.status(500).json({ error: 'Error en el servidor' });
+    }
+});
+
+app.patch('/api/reportes/:id/moderar', async (req, res) => {
+    const { id } = req.params;
+    const { estadoModeracion } = req.body;
+
+    if (!['pendiente', 'revisado', 'falso'].includes(estadoModeracion)) {
+        return res.status(400).json({ error: 'Estado de moderación inválido' });
+    }
+
+    try {
+        const resultado = await Reporte.findByIdAndUpdate(id, { estadoModeracion }, { new: true });
+        if (!resultado) {
+            return res.status(404).json({ error: 'Reporte no encontrado' });
+        }
+        res.json({ mensaje: 'Estado actualizado', reporte: resultado });
+    } catch (error) {
+        console.error('❌ Error al moderar reporte:', error);
         res.status(500).json({ error: 'Error en el servidor' });
     }
 });
@@ -147,6 +186,19 @@ app.get('/api/reportes', async (req, res) => {
     } catch (error) {
         console.error('❌ Error obteniendo reportes:', error);
         res.status(500).json({ error: 'Error al obtener reportes' });
+    }
+});
+
+app.put('/api/moderar/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { estadoModeracion } = req.body;
+
+        await Reporte.findByIdAndUpdate(id, { estadoModeracion });
+        res.json({ mensaje: 'Estado de moderación actualizado' });
+    } catch (error) {
+        console.error('❌ Error al actualizar reporte:', error);
+        res.status(500).json({ error: 'Error en el servidor' });
     }
 });
 

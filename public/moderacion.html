@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Moderación de Reportes</title>
+    <style>
+        body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background: #f5f5f5;
+        }
+        table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+        box-shadow: 0 0 5px rgba(0,0,0,0.1);
+        }
+        th, td {
+        padding: 10px;
+        border: 1px solid #ddd;
+        text-align: left;
+        }
+        th {
+        background: #e0e0e0;
+        }
+        select {
+        padding: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Moderación de Reportes Ciudadanos</h1>
+    <table id="tablaReportes">
+        <thead>
+        <tr>
+            <th>Fecha</th>
+            <th>Descripción</th>
+            <th>Estado</th>
+            <th>Municipio</th>
+            <th>Coordenadas</th>
+            <th>Imagen</th>
+            <th>Estado de Moderación</th>
+        </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <script>
+        async function cargarReportes() {
+        const res = await fetch('/api/reportes');
+        const reportes = await res.json();
+        const tbody = document.querySelector('#tablaReportes tbody');
+        tbody.innerHTML = '';
+
+        reportes.forEach(r => {
+            const tr = document.createElement('tr');
+
+            tr.innerHTML = `
+            <td>${new Date(r.fecha).toLocaleString()}</td>
+            <td>${r.descripcion}</td>
+            <td>${r.estado || 'N/D'}</td>
+            <td>${r.municipio || 'N/D'}</td>
+            <td>${r.coordenadas.lat.toFixed(4)}, ${r.coordenadas.lng.toFixed(4)}</td>
+            <td>${r.imagen ? `<a href="${r.imagen}" target="_blank">Ver</a>` : 'Sin imagen'}</td>
+            <td>
+                <select onchange="actualizarEstado('${r._id}', this.value)">
+                <option value="pendiente" ${r.estadoModeracion === 'pendiente' ? 'selected' : ''}>Pendiente</option>
+                <option value="revisado" ${r.estadoModeracion === 'revisado' ? 'selected' : ''}>Revisado</option>
+                <option value="falso" ${r.estadoModeracion === 'falso' ? 'selected' : ''}>Falso</option>
+                </select>
+            </td>
+            `;
+            tbody.appendChild(tr);
+        });
+        }
+
+        async function actualizarEstado(id, nuevoEstado) {
+        const res = await fetch(`/api/moderar/${id}`, {
+            method: 'PUT',
+            headers: {
+            'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ estadoModeracion: nuevoEstado })
+        });
+
+        if (res.ok) {
+            alert("✅ Estado actualizado correctamente");
+        } else {
+            alert("❌ Error al actualizar estado");
+        }
+        }
+
+        cargarReportes();
+    </script>
+</body>
+</html>

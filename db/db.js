@@ -25,8 +25,11 @@ const reporteSchema = new mongoose.Schema({
         lat: Number,
         lng: Number
     },
+    estado: String,
+    municipio: String,
     imagen: String,  // ruta del archivo
-    fecha: { type: Date, default: Date.now }
+    fecha: { type: Date, default: Date.now },
+    estadoModeracion: { type: String, enum: ['pendiente', 'revisado', 'falso'], default: 'pendiente' }
 });
 
 const Reporte = mongoose.model('Reporte', reporteSchema);

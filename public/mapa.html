@@ -150,44 +150,44 @@
             });
     
             L.geoJSON(geojson, {
-            style: feature => style(feature, rankingMap),
-            onEachFeature: (feature, layer) => {
-                const estado = feature.properties.NOM_ENT;
-                const cantidad = rankingMap[estado.toLowerCase()] || 0;
-    
-                layer.bindPopup(`<strong>${estado}</strong><br>Noticias de incendios: ${cantidad}`);
-    
-                layer.on('click', () => {
-                fetch(`/api/noticias-por-estado/${encodeURIComponent(estado)}`)
-                    .then(res => res.json())
-                    .then(noticias => {
-                    const panel = document.getElementById('panel-noticias');
-                    const titulo = document.getElementById('titulo-estado');
-                    const lista = document.getElementById('lista-noticias');
-    
-                    titulo.textContent = `Noticias de ${estado}`;
-                    lista.innerHTML = '';
-    
-                    if (noticias.length === 0) {
-                        lista.innerHTML = '<li>No hay noticias disponibles.</li>';
-                    } else {
-                        noticias.forEach(n => {
-                        const li = document.createElement('li');
-                        const link = document.createElement('a');
-                        link.href = n.link;
-                        link.textContent = n.titulo;
-                        link.target = '_blank';
-                        li.appendChild(link);
-                        lista.appendChild(li);
+                style: feature => style(feature, rankingMap),
+                onEachFeature: (feature, layer) => {
+                    const estado = feature.properties.NOM_ENT;
+                    const cantidad = rankingMap[estado.toLowerCase()] || 0;
+        
+                    layer.bindPopup(`<strong>${estado}</strong><br>Noticias de incendios: ${cantidad}`);
+        
+                    layer.on('click', () => {
+                    fetch(`/api/noticias-por-estado/${encodeURIComponent(estado)}`)
+                        .then(res => res.json())
+                        .then(noticias => {
+                        const panel = document.getElementById('panel-noticias');
+                        const titulo = document.getElementById('titulo-estado');
+                        const lista = document.getElementById('lista-noticias');
+        
+                        titulo.textContent = `Noticias de ${estado}`;
+                        lista.innerHTML = '';
+        
+                        if (noticias.length === 0) {
+                            lista.innerHTML = '<li>No hay noticias disponibles.</li>';
+                        } else {
+                            noticias.forEach(n => {
+                            const li = document.createElement('li');
+                            const link = document.createElement('a');
+                            link.href = n.link;
+                            link.textContent = n.titulo;
+                            link.target = '_blank';
+                            li.appendChild(link);
+                            lista.appendChild(li);
+                            });
+                        }
+        
+                        panel.style.display = 'block';
                         });
-                    }
-    
-                    panel.style.display = 'block';
                     });
-                });
-            }
+                }
             }).addTo(mapa);
-    
+
             // Leyenda
             const legend = L.control({ position: 'bottomright' });
             legend.onAdd = function () {
@@ -208,22 +208,33 @@
         });
     
         function cargarReportesCiudadanos() {
-            capaReportes.clearLayers();
             fetch('/api/reportes')
-                .then(res => res.json())
-                .then(reportes => {
-                reportes.forEach(rep => {
-                    if (rep.coordenadas?.lat && rep.coordenadas?.lng) {
-                    const marcador = L.marker([rep.coordenadas.lat, rep.coordenadas.lng])
-                        .bindPopup(`<strong>Reporte ciudadano</strong><br>${rep.descripcion || 'Sin descripción'}`);
-                    capaReportes.addLayer(marcador);
+            .then(res => res.json())
+            .then(reportes => {
+                capaReportes.clearLayers(); // Limpiar marcadores anteriores
+
+                reportes
+                .filter(r => r.estadoModeracion === 'pendiente' || r.estadoModeracion === 'revisado')
+                .forEach(r => {
+                    if (r.coordenadas && r.coordenadas.lat && r.coordenadas.lng) {
+                    const contenidoPopup = `
+                        <strong>Reporte ciudadano</strong><br>
+                        ${r.descripcion || 'Sin descripción'}
+                        ${r.imagen ? `<br><img src="${r.imagen}" alt="Imagen del reporte" style="width:100%;max-width:200px;margin-top:8px;border-radius:6px;">` : ''}
+                        <br><small>Estado: ${r.estado || 'N/D'} | Municipio: ${r.municipio || 'N/D'}</small>
+                        <br><small>Fecha: ${new Date(r.fecha).toLocaleString()}</small>
+                        <br><small><strong>Moderación:</strong> ${r.estadoModeracion}</small>
+                    `;
+
+                    L.marker([r.coordenadas.lat, r.coordenadas.lng])
+                        .addTo(capaReportes)
+                        .bindPopup(contenidoPopup);
                     }
                 });
-                })
-                .catch(err => {
-                console.error('❌ Error al cargar reportes ciudadanos:', err);
-                });
+            })
+            .catch(err => console.error('❌ Error al cargar reportes ciudadanos:', err));
         }
+
         // Checkbox para alternar la visibilidad
         document.getElementById('toggleReportes').addEventListener('change', function () {
             if (this.checked) {
