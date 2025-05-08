@@ -77,4 +77,4 @@ async function analizarNoticiasConR() {
     }
 }
 
-analizarNoticiasConR();
+module.exports = { analizarNoticiasConR };

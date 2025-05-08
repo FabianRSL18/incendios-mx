@@ -18,6 +18,37 @@ const upload = multer({ storage });
 const app = express();
 const PORT = 3000;
 
+const { analizarNoticiasConR } = require('./analizar');
+
+async function actualizarTodo() {
+    console.log('⏱ Iniciando análisis y actualización de datos...');
+    try {
+        await analizarNoticiasConR();
+        console.log('✅ Noticias analizadas correctamente.');
+
+        // Ejecutar R para ranking (mapa)
+        exec('Rscript R/analisis_incendios.R noticias_estado.json', (error, stdout, stderr) => {
+            if (error) {
+                console.error('❌ Error ejecutando analisis_incendios.R:', error.message);
+            } else {
+                console.log('📊 Ranking actualizado:\n', stdout);
+            }
+        });
+
+        // Ejecutar R para estadísticas (gráficas)
+        exec('Rscript R/estadisticas_incendios.R', (error, stdout, stderr) => {
+            if (error) {
+                console.error('❌ Error ejecutando estadisticas_incendios.R:', error.message);
+            } else {
+                console.log('📈 Estadísticas actualizadas correctamente.');
+            }
+        });
+
+    } catch (err) {
+        console.error('❌ Error durante el proceso de actualización:', err);
+    }
+}
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -201,6 +232,10 @@ app.put('/api/moderar/:id', async (req, res) => {
         res.status(500).json({ error: 'Error en el servidor' });
     }
 });
+
+actualizarTodo(); // Ejecutar todo al iniciar
+
+setInterval(actualizarTodo, 5 * 60 * 1000); // Repetir cada 5 minutos
 
 // Iniciar servidor
 app.listen(PORT, () => {
