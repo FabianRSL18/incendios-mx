@@ -27,67 +27,54 @@
 </head>
 <body>
     <h2>Reportar posible incendio forestal</h2>
-    <form id="reporteForm">
-        <textarea id="descripcion" placeholder="Describe lo que viste..." required></textarea>
-        <input type="hidden" id="latitud">
-        <input type="hidden" id="longitud">
+    <form id="reporteForm" enctype="multipart/form-data">
+        <textarea name="descripcion" id="descripcion" placeholder="Describe lo que viste..." required></textarea>
+        <input type="file" name="imagen" id="imagen" accept="image/*">
+        <input type="hidden" name="lat" id="latitud">
+        <input type="hidden" name="lng" id="longitud">
         <button type="submit">Enviar Reporte</button>
     </form>
 
     <script>
-        let latitud = null;
-        let longitud = null;
-
         // Obtener coordenadas al cargar la página
         window.onload = function () {
-        if ("geolocation" in navigator) {
-            navigator.geolocation.getCurrentPosition(
-            function (position) {
-                latitud = position.coords.latitude;
-                longitud = position.coords.longitude;
-                document.getElementById('latitud').value = latitud;
-                document.getElementById('longitud').value = longitud;
-                console.log('📍 Coordenadas listas:', latitud, longitud);
-            },
-            function (error) {
-                alert("Error al obtener ubicación: " + error.message);
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(
+                    function (position) {
+                        document.getElementById('latitud').value = position.coords.latitude;
+                        document.getElementById('longitud').value = position.coords.longitude;
+                        console.log('📍 Coordenadas listas:', position.coords.latitude, position.coords.longitude);
+                    },
+                    function (error) {
+                        alert("Error al obtener ubicación: " + error.message);
+                    }
+                );
+            } else {
+                alert("Tu navegador no soporta geolocalización.");
             }
-            );
-        } else {
-            alert("Tu navegador no soporta geolocalización.");
-        }
         };
 
-        // Manejar envío del formulario
+        // Enviar datos con imagen al servidor
         document.getElementById('reporteForm').addEventListener('submit', async function (e) {
             e.preventDefault();
 
-            const descripcion = document.getElementById('descripcion').value;
+            const formData = new FormData(this);
 
-            if (!latitud || !longitud) {
-                alert("No se pudo obtener la ubicación. Intenta de nuevo.");
-                return;
+            try {
+                const response = await fetch('/api/reportar', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                console.log('✅ Reporte enviado:', data);
+                alert("Gracias por tu reporte.");
+                this.reset();
+            } catch (error) {
+                console.error('❌ Error al enviar reporte:', error);
+                alert("Hubo un problema al enviar el reporte.");
             }
-
-            const coords = {
-                lat: latitud,
-                lng: longitud
-            };
-
-            const response = await fetch('/api/reportar', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ descripcion, coordenadas: coords })
-            });
-
-            const data = await response.json();
-            console.log('✅ Reporte enviado:', data);
-            alert("Gracias por tu reporte.");
-            this.reset();
         });
     </script>
 </body>
 </html>
-

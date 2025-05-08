@@ -4,9 +4,16 @@ const { exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const mongoose = require('mongoose');
+const multer = require('multer');
 
 const { obtenerNoticias } = require('./scraper/scraper');
 const { obtenerRankingPorEstado, Noticia, Reporte } = require('./db/db');
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, 'public/uploads/'),
+    filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
+});
+const upload = multer({ storage });
 
 const app = express();
 const PORT = 3000;
@@ -103,11 +110,18 @@ app.get('/api/estadisticas', (req, res) => {
 });
 
 // API para guardar reportes de usuarios
-app.post('/api/reportar', async (req, res) => {
+app.post('/api/reportar', upload.single('imagen'), async (req, res) => {
     try {
-        const nuevo = new Reporte(req.body);
+        const nuevo = new Reporte({
+            descripcion: req.body.descripcion,
+            coordenadas: {
+                lat: parseFloat(req.body.lat),
+                lng: parseFloat(req.body.lng)
+            },
+            imagen: req.file ? `/uploads/${req.file.filename}` : null
+        });
         await nuevo.save();
-        res.status(201).json({ mensaje: 'Reporte recibido' });
+        res.status(201).json({ mensaje: 'Reporte recibido con imagen' });
     } catch (error) {
         console.error('❌ Error al guardar el reporte:', error);
         res.status(500).json({ error: 'Error en el servidor' });

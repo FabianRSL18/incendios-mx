@@ -25,6 +25,7 @@ const reporteSchema = new mongoose.Schema({
         lat: Number,
         lng: Number
     },
+    imagen: String,  // ruta del archivo
     fecha: { type: Date, default: Date.now }
 });
 
