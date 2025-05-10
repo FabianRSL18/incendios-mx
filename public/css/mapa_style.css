@@ -1,0 +1,124 @@
+:root {
+    --primary-color: #2c3e50;
+    --danger-color: #dc3545;
+    --warning-color: #ffc107;
+}        
+body {
+    background-color: #f8f9fa;
+}        
+.map-container {
+    max-width: 1400px;
+    margin: 20px auto;
+    padding: 0 15px;
+}        
+.page-title {
+    color: var(--danger-color);
+    margin-bottom: 20px;
+    text-align: center;
+    border-bottom: 2px solid var(--warning-color);
+    padding-bottom: 10px;
+}        
+#mapa {
+    height: 70vh;
+    min-height: 500px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 1;
+}        
+.legend {
+    line-height: 18px;
+    color: #555;
+    background: white;
+    padding: 8px 10px;
+    border-radius: 5px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.2);
+    font-family: Arial, sans-serif;
+}        
+.legend i {
+    width: 18px;
+    height: 18px;
+    float: left;
+    margin-right: 8px;
+    opacity: 0.8;
+    border-radius: 3px;
+}        
+.panel-noticias {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    width: 350px;
+    max-height: 80vh;
+    overflow-y: auto;
+    background: white;
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    padding: 15px;
+    z-index: 1000;
+    display: none;
+}        
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}        
+.panel-title {
+    margin: 0;
+    font-size: 1.2rem;
+    color: var(--primary-color);
+}        
+.panel-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #6c757d;
+}        
+.news-item {
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f0f0f0;
+}        
+.news-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+.news-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    display: block;
+}        
+.news-link:hover {
+    color: var(--danger-color);
+    }
+.news-date {
+    font-size: 0.8rem;
+    color: #6c757d;
+}        
+.map-controls {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}        
+.refresh-info {
+    text-align: center;
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin-top: 10px;
+}        
+@media (max-width: 768px) {
+    .panel-noticias {
+        width: 90%;
+        right: 5%;
+        max-height: 50vh;
+    }
+    #mapa {
+        height: 60vh;
+    }
+}

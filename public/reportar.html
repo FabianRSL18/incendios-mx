@@ -2,41 +2,88 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Reportar Incendio</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 40px;
-            background: #f5f5f5;
-        }
-        form {
-            max-width: 500px;
-            margin: auto;
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
-        input, textarea, button {
-            width: 100%;
-            margin-bottom: 15px;
-            padding: 10px;
-            font-size: 1rem;
-        }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportar Incendio | AlertaForestal</title>
+    <!-- Estilos locales -->
+    <link rel="stylesheet" href="css/reportar_style.css">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Navbar Componente Reutilizable -->
+    <script src="navbar.js" defer></script>
 </head>
 <body>
-    <h2>Reportar posible incendio forestal</h2>
-    <form id="reporteForm" enctype="multipart/form-data">
-        <textarea name="descripcion" id="descripcion" placeholder="Describe lo que viste..." required></textarea>
-        <input type="file" name="imagen" id="imagen" accept="image/*">
-        <input type="hidden" name="lat" id="latitud">
-        <input type="hidden" name="lng" id="longitud">
-        <input type="hidden" id="estado" name="estado">
-        <input type="hidden" id="municipio" name="municipio">
-        <button type="submit">Enviar Reporte</button>
-    </form>
+    <!-- Navbar se insertará automáticamente aquí via navbar.js -->
+    
+    <main class="container">
+        <div class="report-form">
+            <h2 class="form-title">
+                <i class="bi bi-exclamation-triangle-fill"></i> Reportar posible incendio forestal
+            </h2>
+            
+            <form id="reporteForm" enctype="multipart/form-data">
+                <!-- Descripción -->
+                <div class="mb-3">
+                    <label for="descripcion" class="form-label">Describe lo que viste:</label>
+                    <textarea class="form-control" name="descripcion" id="descripcion" 
+                                rows="5" placeholder="Proporciona detalles como tamaño del incendio, dirección del humo, vegetación afectada..." 
+                                required></textarea>
+                </div>
+                
+                <!-- Imagen -->
+                <div class="mb-3">
+                    <label for="imagen" class="form-label">Adjuntar imagen (opcional):</label>
+                    <input class="form-control" type="file" name="imagen" id="imagen" accept="image/*">
+                </div>
+                
+                <!-- Ubicación automática -->
+                <div class="location-info">
+                    <h5><i class="bi bi-geo-alt-fill"></i> Ubicación detectada:</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <small>Latitud:</small>
+                            <div id="latDisplay">Obteniendo ubicación...</div>
+                        </div>
+                        <div class="col-md-6">
+                            <small>Longitud:</small>
+                            <div id="lngDisplay">Obteniendo ubicación...</div>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <small>Municipio/Estado:</small>
+                        <div id="locationDisplay">Detectando...</div>
+                    </div>
+                </div>
+                
+                <!-- Campos ocultos (conservados exactamente igual) -->
+                <input type="hidden" name="lat" id="latitud">
+                <input type="hidden" name="lng" id="longitud">
+                <input type="hidden" id="estado" name="estado">
+                <input type="hidden" id="municipio" name="municipio">
+                
+                <!-- Botón de envío -->
+                <button type="submit" class="btn btn-submit" id="submitBtn">
+                    <i class="bi bi-send-fill"></i> Enviar Reporte
+                </button>
+            </form>
+        </div>
+    </main>
 
+    <!-- Footer básico -->
+    <footer class="bg-dark text-white py-3 mt-5">
+        <div class="container text-center">
+            <small>© <span id="current-year"></span> AlertaForestal - Sistema de reporte comunitario</small>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Script para año actual -->
+    <script>
+        document.getElementById('current-year').textContent = new Date().getFullYear();
+    </script>
     <script>
         // Ejecuta el código cuando se haya cargado completamente la página
         window.onload = function () {
@@ -51,6 +98,11 @@
                         // Asigna latitud y longitud a los campos ocultos del formulario
                         document.getElementById('latitud').value = lat;
                         document.getElementById('longitud').value = lng;
+                        
+                        // Muestra las coordenadas en el formulario
+                        document.getElementById('latDisplay').textContent = lat.toFixed(6);
+                        document.getElementById('lngDisplay').textContent = lng.toFixed(6);
+                        
                         console.log('📍 Coordenadas listas:', lat, lng);
 
                         // Realiza Reverse Geocoding con Nominatim para obtener estado y municipio
@@ -65,18 +117,34 @@
                             // Llena los campos de estado y municipio automáticamente
                             document.getElementById('estado').value = estado;
                             document.getElementById('municipio').value = municipio;
+                            
+                            // Muestra la ubicación en el formulario
+                            document.getElementById('locationDisplay').textContent = `${municipio}, ${estado}`;
 
                             console.log('📌 Estado:', estado, '| Municipio:', municipio);
                         } catch (err) {
                             console.warn("⚠️ No se pudo obtener estado y municipio:", err);
+                            document.getElementById('locationDisplay').textContent = "Ubicación no disponible";
                         }
                     },
                     function (error) {
+                        console.error("Error al obtener ubicación:", error);
                         alert("Error al obtener ubicación: " + error.message);
+                        document.getElementById('latDisplay').textContent = "Error";
+                        document.getElementById('lngDisplay').textContent = "Error";
+                        document.getElementById('locationDisplay').textContent = "Error al obtener ubicación";
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0
                     }
                 );
             } else {
                 alert("Tu navegador no soporta geolocalización.");
+                document.getElementById('latDisplay').textContent = "No soportado";
+                document.getElementById('lngDisplay').textContent = "No soportado";
+                document.getElementById('locationDisplay').textContent = "Geolocalización no disponible";
             }
         };
 
@@ -88,6 +156,7 @@
             const descripcion = document.getElementById('descripcion').value.trim();
             const lat = document.getElementById('latitud').value;
             const lng = document.getElementById('longitud').value;
+            const submitBtn = document.getElementById('submitBtn');
 
             // Validación básica de los campos requeridos
             if (!descripcion || descripcion.length < 10) {
@@ -101,9 +170,8 @@
             }
 
             // Desactiva el botón de envío para evitar múltiples envíos
-            const boton = this.querySelector('button[type="submit"]');
-            boton.disabled = true;
-            boton.textContent = "Enviando...";
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Enviando...';
 
             // Prepara los datos del formulario para enviar con multipart/form-data
             const formData = new FormData(this);
@@ -117,15 +185,28 @@
 
                 const data = await response.json();
                 console.log('✅ Reporte enviado:', data);
-                alert("Gracias por tu reporte.");
-                this.reset(); // Limpia el formulario después del envío
+                
+                if (response.ok) {
+                    alert("¡Reporte enviado con éxito! Gracias por tu colaboración.");
+                    this.reset(); // Limpia el formulario después del envío
+                    
+                    // Resetear la ubicación
+                    document.getElementById('latDisplay').textContent = "Actualizando...";
+                    document.getElementById('lngDisplay').textContent = "Actualizando...";
+                    document.getElementById('locationDisplay').textContent = "Actualizando...";
+                    
+                    // Volver a obtener ubicación
+                    window.onload();
+                } else {
+                    throw new Error(data.message || 'Error en el servidor');
+                }
             } catch (error) {
                 console.error('❌ Error al enviar reporte:', error);
-                alert("Hubo un problema al enviar el reporte.");
+                alert("Hubo un problema al enviar el reporte: " + error.message);
             } finally {
                 // Restaura el botón de envío
-                boton.disabled = false;
-                boton.textContent = "Enviar Reporte";
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="bi bi-send-fill"></i> Enviar Reporte';
             }
         });
     </script>

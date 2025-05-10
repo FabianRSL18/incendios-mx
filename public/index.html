@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plataforma de Monitoreo</title>
+    <!-- Estilos locales -->
+    <link rel="stylesheet" href="css/index_style.css">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Navbar JS -->
+    <script src="navbar.js" defer></script>
+</head>
+<body>
+    <!-- La navbar se insertará automáticamente aquí via navbar.js -->
+    
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container text-center py-5">
+            <h1 class="display-4 fw-bold">Plataforma de Monitoreo Ambiental</h1>
+            <p class="lead">Sistema integral para la detección y reporte de incendios forestales</p>
+            <a href="reportar.html" class="btn btn-danger btn-lg mt-3">
+                <i class="bi bi-exclamation-triangle-fill"></i> Reportar Emergencia
+            </a>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="container my-5">
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card feature-card shadow">
+                    <div class="card-body text-center">
+                        <i class="bi bi-map fs-1 text-primary"></i>
+                        <h3 class="card-title h5 mt-3">Mapa Interactivo</h3>
+                        <p class="card-text">Visualiza los incidentes reportados en tiempo real en nuestro mapa georreferenciado.</p>
+                        <a href="mapa.html" class="btn btn-outline-primary">Ver Mapa</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card feature-card shadow">
+                    <div class="card-body text-center">
+                        <i class="bi bi-graph-up fs-1 text-success"></i>
+                        <h3 class="card-title h5 mt-3">Estadísticas</h3>
+                        <p class="card-text">Analiza datos históricos y tendencias de incendios forestales en la región.</p>
+                        <a href="estadisticas.html" class="btn btn-outline-success">Ver Estadísticas</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card feature-card shadow">
+                    <div class="card-body text-center">
+                        <i class="bi bi-newspaper fs-1 text-info"></i>
+                        <h3 class="card-title h5 mt-3">Noticias</h3>
+                        <p class="card-text">Mantente informado con las últimas noticias sobre prevención y combate de incendios.</p>
+                        <a href="noticias.html" class="btn btn-outline-info">Ver Noticias</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Call to Action -->
+    <section class="bg-light py-5">
+        <div class="container text-center">
+            <h2 class="h4">¿Quieres contribuir con la plataforma?</h2>
+            <div class="mt-4">
+                <a href="reportar.html" class="btn btn-danger me-2">
+                    <i class="bi bi-exclamation-triangle-fill"></i> Reportar Incidente
+                </a>
+                <a href="#" class="btn btn-outline-secondary">
+                    <i class="bi bi-info-circle-fill"></i> Aprende a Prevenir
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Sobre la Plataforma</h5>
+                    <p>Sistema comunitario para el monitoreo y reporte de incendios forestales.</p>
+                </div>
+                <div class="col-md-3">
+                    <h5>Enlaces Rápidos</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="index.html" class="text-white">Inicio</a></li>
+                        <li><a href="mapa.html" class="text-white">Mapa</a></li>
+                        <li><a href="reportar.html" class="text-white">Reportar</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-3">
+                    <h5>Contacto</h5>
+                    <ul class="list-unstyled">
+                        <li><i class="bi bi-envelope"></i> contacto@plataforma.com</li>
+                        <li><i class="bi bi-telephone"></i> +123 456 7890</li>
+                    </ul>
+                </div>
+            </div>
+            <hr>
+            <div class="text-center">
+                <p class="mb-0">© 2023 Plataforma de Monitoreo Ambiental. Todos los derechos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -3,110 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mapa de Incendios Forestales en México</title>
+    <title>Mapa de Incendios | AlertaForestal</title>
+    <!-- Estilos locales -->
+    <link rel="stylesheet" href="css/mapa_style.css">
+    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background: #f9f9f9;
-        }
-
-        h1 {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        #mapa {
-            height: 600px;
-            border-radius: 10px;
-            border: 1px solid #ccc;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        .legend {
-            line-height: 18px;
-            color: #555;
-            background: white;
-            padding: 6px 8px;
-            border-radius: 5px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.2);
-        }
-
-        .legend i {
-            width: 18px;
-            height: 18px;
-            float: left;
-            margin-right: 8px;
-            opacity: 0.7;
-        }
-
-        .panel {
-            position: absolute;
-            top: 80px;
-            right: 20px;
-            width: 300px;
-            max-height: 80%;
-            overflow-y: auto;
-            background: white;
-            border: 1px solid #ccc;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-            padding: 15px;
-            z-index: 1000;
-            display: none;
-        }
-
-        .panel button {
-            background: transparent;
-            border: none;
-            font-size: 18px;
-            float: right;
-            cursor: pointer;
-        }
-
-        .panel h2 {
-            margin-top: 0;
-            font-size: 18px;
-            margin-bottom: 10px;
-        }
-
-        .panel ul {
-            list-style: none;
-            padding: 0;
-        }
-
-        .panel ul li {
-            margin-bottom: 10px;
-        }
-
-        .panel ul li a {
-            color: #0077cc;
-            text-decoration: none;
-        }
-
-        .panel ul li a:hover {
-            text-decoration: underline;
-        }
-
-    </style>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Navbar Componente Reutilizable -->
+    <script src="navbar.js" defer></script>
 </head>
 <body>
-    <h1>Mapa de Incendios Forestales por Estado</h1>
-    <div id="mapa"></div>
-    <div id="panel-noticias" class="panel">
-        <button onclick="cerrarPanel()">✖</button>
-        <h2 id="titulo-estado"></h2>
-        <ul id="lista-noticias"></ul>
-    </div>
+    <!-- Navbar se insertará automáticamente aquí via navbar.js -->
+    
+    <main class="container-fluid">
+        <div class="map-container">
+            <h1 class="page-title">
+                <i class="bi bi-map"></i> Mapa de Incendios Forestales
+            </h1>
+            
+            <div class="map-controls">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="toggleReportes" checked>
+                    <label class="form-check-label" for="toggleReportes">Mostrar reportes ciudadanos</label>
+                </div>
+                <div class="refresh-info">
+                    <i class="bi bi-arrow-clockwise"></i> El mapa se actualiza automáticamente cada 5 minutos
+                </div>
+            </div>
+            
+            <div id="mapa"></div>
+            
+            <div id="panel-noticias" class="panel-noticias">
+                <div class="panel-header">
+                    <h2 class="panel-title" id="titulo-estado"></h2>
+                    <button class="panel-close" onclick="cerrarPanel()">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+                <ul class="list-unstyled" id="lista-noticias"></ul>
+            </div>
+        </div>
+    </main>
 
-    <label style="display: block; margin: 10px 0;">
-        <input type="checkbox" id="toggleReportes" checked>
-        Mostrar reportes ciudadanos
-    </label>
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-3 mt-5">
+        <div class="container text-center">
+            <small>© <span id="current-year"></span> AlertaForestal - Sistema de monitoreo</small>
+        </div>
+    </footer>
 
+    <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Script para año actual -->
+    <script>
+        document.getElementById('current-year').textContent = new Date().getFullYear();
+    </script>
+
     <script>
         // Crear un mapa centrado en México con zoom inicial 5
         const mapa = L.map('mapa').setView([23.6345, -102.5528], 5);
@@ -146,8 +104,8 @@
 
         // Cargar el mapa de estados (GeoJSON) y el ranking de noticias por estado
         Promise.all([
-            fetch('/data/mexico.json').then(res => res.json()),                          // Mapa de estados
-            fetch('http://localhost:3000/api/ranking-estados').then(res => res.json())   // Datos de ranking
+            fetch('/data/mexico.json').then(res => res.json()),
+            fetch('http://localhost:3000/api/ranking-estados').then(res => res.json())
         ])
         .then(([geojson, ranking]) => {
             // Convertir ranking en un objeto { estado: cantidad }
@@ -163,13 +121,26 @@
                     const estado = feature.properties.NOM_ENT;
                     const cantidad = rankingMap[estado.toLowerCase()] || 0;
 
-                    // Popup con nombre del estado y cantidad de noticias
-                    layer.bindPopup(`<strong>${estado}</strong><br>Noticias de incendios: ${cantidad}`);
+                    // Popup simplificado sin botón
+                    layer.bindPopup(`
+                        <div style="min-width: 150px">
+                            <h6 style="margin: 0 0 5px 0; color: var(--danger-color)">${estado}</h6>
+                            <p style="margin: 0">
+                                <i class="bi bi-fire" style="color: ${getColor(cantidad)}"></i> 
+                                <strong>${cantidad}</strong> noticias de incendios
+                            </p>
+                        </div>
+                    `);
 
                     // Al hacer clic, se cargan noticias específicas de ese estado
                     layer.on('click', () => {
                         fetch(`/api/noticias-por-estado/${encodeURIComponent(estado)}`)
-                            .then(res => res.json())
+                            .then(res => {
+                                if (!res.ok) {
+                                    throw new Error('Error al cargar noticias');
+                                }
+                                return res.json();
+                            })
                             .then(noticias => {
                                 const panel = document.getElementById('panel-noticias');
                                 const titulo = document.getElementById('titulo-estado');
@@ -179,20 +150,36 @@
                                 lista.innerHTML = '';
 
                                 if (noticias.length === 0) {
-                                    lista.innerHTML = '<li>No hay noticias disponibles.</li>';
+                                    lista.innerHTML = '<li class="text-muted">No hay noticias disponibles para este estado.</li>';
                                 } else {
                                     noticias.forEach(n => {
                                         const li = document.createElement('li');
+                                        li.className = 'news-item';
+                                        
                                         const link = document.createElement('a');
+                                        link.className = 'news-link';
                                         link.href = n.link;
-                                        link.textContent = n.titulo;
                                         link.target = '_blank';
+                                        link.innerHTML = `
+                                            <strong>${n.titulo || 'Sin título'}</strong>
+                                            ${n.fecha ? `<div class="news-date">${new Date(n.fecha).toLocaleDateString('es-MX')}</div>` : ''}
+                                        `;
+                                        
                                         li.appendChild(link);
                                         lista.appendChild(li);
                                     });
                                 }
 
                                 panel.style.display = 'block';
+                            })
+                            .catch(err => {
+                                console.error('Error al cargar noticias:', err);
+                                const lista = document.getElementById('lista-noticias');
+                                lista.innerHTML = `
+                                    <li class="text-danger">
+                                        <i class="bi bi-exclamation-triangle"></i> Error al cargar noticias: ${err.message}
+                                    </li>
+                                `;
                             });
                     });
                 }
@@ -203,6 +190,8 @@
             legend.onAdd = function () {
                 const div = L.DomUtil.create('div', 'legend');
                 const grades = [0, 1, 3, 6, 11, 16];
+                div.innerHTML = '<h6 style="margin:0 0 5px 0">Noticias por estado</h6>';
+                
                 for (let i = 0; i < grades.length - 1; i++) {
                     div.innerHTML +=
                         '<i style="background:' + getColor(grades[i + 1]) + '"></i> ' +
@@ -215,35 +204,87 @@
         })
         .catch(err => {
             console.error("Error cargando mapa o datos:", err);
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'alert alert-danger';
+            errorDiv.innerHTML = `
+                <i class="bi bi-exclamation-triangle-fill"></i> Error al cargar el mapa. Por favor intenta recargar la página.
+            `;
+            document.getElementById('mapa').appendChild(errorDiv);
         });
 
         // Función para cargar y mostrar reportes ciudadanos como marcadores
         function cargarReportesCiudadanos() {
             fetch('/api/reportes')
-                .then(res => res.json())
+                .then(res => {
+                    if (!res.ok) {
+                        throw new Error('Error al cargar reportes');
+                    }
+                    return res.json();
+                })
                 .then(reportes => {
-                    capaReportes.clearLayers(); // Limpiar marcadores anteriores
+                    capaReportes.clearLayers();
 
                     reportes
                         .filter(r => r.estadoModeracion === 'pendiente' || r.estadoModeracion === 'revisado')
                         .forEach(r => {
                             if (r.coordenadas && r.coordenadas.lat && r.coordenadas.lng) {
+                                const icono = L.divIcon({
+                                    className: `marker-${r.estadoModeracion}`,
+                                    html: `
+                                        <div style="
+                                            background: ${r.estadoModeracion === 'revisado' ? '#28a745' : '#ffc107'};
+                                            width: 24px;
+                                            height: 24px;
+                                            border-radius: 50%;
+                                            border: 2px solid white;
+                                            display: flex;
+                                            align-items: center;
+                                            justify-content: center;
+                                            color: white;
+                                            font-weight: bold;
+                                        ">
+                                            <i class="bi bi-${r.estadoModeracion === 'revisado' ? 'check' : 'exclamation'}"></i>
+                                        </div>
+                                    `,
+                                    iconSize: [24, 24],
+                                    iconAnchor: [12, 12]
+                                });
+
                                 const contenidoPopup = `
-                                    <strong>Reporte ciudadano</strong><br>
-                                    ${r.descripcion || 'Sin descripción'}
-                                    ${r.imagen ? `<br><img src="${r.imagen}" alt="Imagen del reporte" style="width:100%;max-width:200px;margin-top:8px;border-radius:6px;">` : ''}
-                                    <br><small>Estado: ${r.estado || 'N/D'} | Municipio: ${r.municipio || 'N/D'}</small>
-                                    <br><small>Fecha: ${new Date(r.fecha).toLocaleString()}</small>
-                                    <br><small><strong>Moderación:</strong> ${r.estadoModeracion}</small>
+                                    <div style="min-width: 250px">
+                                        <h6 style="margin: 0 0 5px 0; color: ${r.estadoModeracion === 'revisado' ? '#28a745' : '#ffc107'}">
+                                            <i class="bi bi-${r.estadoModeracion === 'revisado' ? 'check-circle' : 'exclamation-triangle'}"></i>
+                                            Reporte ${r.estadoModeracion}
+                                        </h6>
+                                        <p style="margin: 0 0 8px 0">${r.descripcion || 'Sin descripción'}</p>
+                                        ${r.imagen ? `
+                                            <img src="${r.imagen}" alt="Imagen del reporte" 
+                                                style="width:100%; max-width:200px; margin-bottom:8px; border-radius:6px;">
+                                        ` : ''}
+                                        <div style="font-size: 0.8rem; color: #6c757d">
+                                            <div><i class="bi bi-geo-alt"></i> ${r.municipio || 'N/D'}, ${r.estado || 'N/D'}</div>
+                                            <div><i class="bi bi-calendar"></i> ${new Date(r.fecha).toLocaleString()}</div>
+                                        </div>
+                                    </div>
                                 `;
 
-                                L.marker([r.coordenadas.lat, r.coordenadas.lng])
+                                L.marker([r.coordenadas.lat, r.coordenadas.lng], { icon: icono })
                                     .addTo(capaReportes)
                                     .bindPopup(contenidoPopup);
                             }
                         });
                 })
-                .catch(err => console.error('❌ Error al cargar reportes ciudadanos:', err));
+                .catch(err => {
+                    console.error('❌ Error al cargar reportes ciudadanos:', err);
+                    const notification = document.createElement('div');
+                    notification.className = 'alert alert-danger position-fixed top-0 start-50 translate-middle-x mt-3';
+                    notification.style.zIndex = '1100';
+                    notification.innerHTML = `
+                        <i class="bi bi-exclamation-triangle-fill"></i> Error al cargar reportes ciudadanos
+                    `;
+                    document.body.appendChild(notification);
+                    setTimeout(() => notification.remove(), 3000);
+                });
         }
 
         // Listener del checkbox para mostrar/ocultar los reportes ciudadanos
@@ -267,14 +308,22 @@
         if (document.getElementById('toggleReportes').checked) {
             cargarReportesCiudadanos();
         }
-    </script>
 
-    <!-- Recarga automática del mapa cada 5 minutos -->
-    <script>
+        // Recarga automática del mapa cada 5 minutos
         setInterval(() => {
-            location.reload();
-        }, 5 * 60 * 1000); // 5 minutos
+            const notification = document.createElement('div');
+            notification.className = 'alert alert-info position-fixed bottom-0 start-50 translate-middle-x mb-3';
+            notification.style.zIndex = '1100';
+            notification.innerHTML = `
+                <i class="bi bi-arrow-clockwise"></i> Actualizando datos del mapa...
+            `;
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 2000);
+            
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
+        }, 5 * 60 * 1000);
     </script>
-
 </body>
 </html>

@@ -2,102 +2,198 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Moderación de Reportes</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moderación de Reportes | AlertaForestal</title>
+    <!-- Estilos locales -->
+    <link rel="stylesheet" href="css/moderacion_style.css">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Navbar Componente Reutilizable -->
+    <script src="navbar.js" defer></script>
+    
     <style>
-        body {
-        font-family: Arial, sans-serif;
-        padding: 20px;
-        background: #f5f5f5;
-        }
-        table {
-        width: 100%;
-        border-collapse: collapse;
-        background: white;
-        box-shadow: 0 0 5px rgba(0,0,0,0.1);
-        }
-        th, td {
-        padding: 10px;
-        border: 1px solid #ddd;
-        text-align: left;
-        }
-        th {
-        background: #e0e0e0;
-        }
-        select {
-        padding: 5px;
-        }
+
     </style>
 </head>
 <body>
-    <h1>Moderación de Reportes Ciudadanos</h1>
-    <table id="tablaReportes">
-        <thead>
-        <tr>
-            <th>Fecha</th>
-            <th>Descripción</th>
-            <th>Estado</th>
-            <th>Municipio</th>
-            <th>Coordenadas</th>
-            <th>Imagen</th>
-            <th>Estado de Moderación</th>
-        </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
+    <!-- Navbar se insertará automáticamente aquí via navbar.js -->
+    
+    <main class="container">
+        <div class="moderation-container">
+            <h1 class="page-title">
+                <i class="bi bi-shield-check"></i> Panel de Moderación
+            </h1>
+            
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle-fill"></i> Aquí puedes revisar y validar los reportes enviados por los usuarios.
+            </div>
+            
+            <div class="refresh-controls">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span id="reportCount" class="badge bg-primary">Cargando...</span>
+                    </div>
+                    <button onclick="cargarReportes()" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-arrow-clockwise"></i> Actualizar
+                    </button>
+                </div>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-hover" id="tablaReportes">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Descripción</th>
+                            <th>Ubicación</th>
+                            <th>Imagen</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
 
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-3 mt-5">
+        <div class="container text-center">
+            <small>© <span id="current-year"></span> AlertaForestal - Panel de Moderación</small>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Script para año actual -->
+    <script>
+        document.getElementById('current-year').textContent = new Date().getFullYear();
+    </script>
     <script>
         // Función que carga los reportes desde la API y los muestra en una tabla
         async function cargarReportes() {
-            const res = await fetch('/api/reportes');             // Solicita los reportes al servidor
-            const reportes = await res.json();                    // Convierte la respuesta a JSON
-            const tbody = document.querySelector('#tablaReportes tbody'); // Selecciona el cuerpo de la tabla
-            tbody.innerHTML = '';                                 // Limpia la tabla antes de llenarla
+            try {
+                const res = await fetch('/api/reportes');             // Solicita los reportes al servidor
+                
+                if (!res.ok) {
+                    throw new Error('Error al cargar reportes');
+                }
+                
+                const reportes = await res.json();                    // Convierte la respuesta a JSON
+                const tbody = document.querySelector('#tablaReportes tbody'); // Selecciona el cuerpo de la tabla
+                tbody.innerHTML = '';                                 // Limpia la tabla antes de llenarla
 
-            // Recorre los reportes recibidos
-            reportes.forEach(r => {
-                const tr = document.createElement('tr');          // Crea una fila de tabla
+                // Actualiza el contador
+                document.getElementById('reportCount').textContent = `${reportes.length} reportes encontrados`;
+                
+                // Recorre los reportes recibidos
+                reportes.forEach(r => {
+                    const tr = document.createElement('tr');          // Crea una fila de tabla
 
-                // Inserta el contenido HTML en cada celda
-                tr.innerHTML = `
-                    <td>${new Date(r.fecha).toLocaleString()}</td>           <!-- Fecha con formato legible -->
-                    <td>${r.descripcion}</td>                                 <!-- Descripción del incidente -->
-                    <td>${r.estado || 'N/D'}</td>                             <!-- Estado (o "N/D" si no está definido) -->
-                    <td>${r.municipio || 'N/D'}</td>                          <!-- Municipio (o "N/D") -->
-                    <td>${r.coordenadas.lat.toFixed(4)}, ${r.coordenadas.lng.toFixed(4)}</td>  <!-- Coordenadas -->
-                    <td>${r.imagen ? `<a href="${r.imagen}" target="_blank">Ver</a>` : 'Sin imagen'}</td> <!-- Imagen (si existe) -->
-                    <td>
-                        <select onchange="actualizarEstado('${r._id}', this.value)">
-                            <option value="pendiente" ${r.estadoModeracion === 'pendiente' ? 'selected' : ''}>Pendiente</option>
-                            <option value="revisado" ${r.estadoModeracion === 'revisado' ? 'selected' : ''}>Revisado</option>
-                            <option value="falso" ${r.estadoModeracion === 'falso' ? 'selected' : ''}>Falso</option>
-                        </select>
-                    </td>
+                    // Determina la clase CSS según el estado de moderación
+                    let statusClass = '';
+                    if (r.estadoModeracion === 'pendiente') statusClass = 'status-pending';
+                    if (r.estadoModeracion === 'revisado') statusClass = 'status-reviewed';
+                    if (r.estadoModeracion === 'falso') statusClass = 'status-false';
+
+                    // Inserta el contenido HTML en cada celda
+                    tr.innerHTML = `
+                        <td>${new Date(r.fecha).toLocaleString()}</td>
+                        <td>${r.descripcion || 'Sin descripción'}</td>
+                        <td>
+                            <div><strong>${r.municipio || 'N/D'}, ${r.estado || 'N/D'}</strong></div>
+                            <small>${r.coordenadas.lat.toFixed(4)}, ${r.coordenadas.lng.toFixed(4)}</small>
+                        </td>
+                        <td>
+                            ${r.imagen ? `
+                                <a href="${r.imagen}" target="_blank" class="img-link">
+                                    <i class="bi bi-image"></i> Ver imagen
+                                </a>
+                            ` : '<span class="text-muted">No disponible</span>'}
+                        </td>
+                        <td class="${statusClass}">
+                            ${r.estadoModeracion || 'pendiente'}
+                        </td>
+                        <td>
+                            <select class="form-select form-select-sm" onchange="actualizarEstado('${r._id}', this.value)">
+                                <option value="pendiente" ${r.estadoModeracion === 'pendiente' ? 'selected' : ''}>Pendiente</option>
+                                <option value="revisado" ${r.estadoModeracion === 'revisado' ? 'selected' : ''}>Revisado</option>
+                                <option value="falso" ${r.estadoModeracion === 'falso' ? 'selected' : ''}>Falso positivo</option>
+                            </select>
+                        </td>
+                    `;
+
+                    tbody.appendChild(tr); // Añade la fila a la tabla
+                });
+            } catch (error) {
+                console.error('Error al cargar reportes:', error);
+                const tbody = document.querySelector('#tablaReportes tbody');
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center text-danger">
+                            <i class="bi bi-exclamation-triangle-fill"></i> Error al cargar los reportes: ${error.message}
+                        </td>
+                    </tr>
                 `;
-
-                tbody.appendChild(tr); // Añade la fila a la tabla
-            });
+                document.getElementById('reportCount').textContent = 'Error al cargar';
+            }
         }
 
         // Función que actualiza el estado de moderación del reporte
         async function actualizarEstado(id, nuevoEstado) {
-            const res = await fetch(`/api/moderar/${id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ estadoModeracion: nuevoEstado })  // Se envía el nuevo estado en el cuerpo de la solicitud
-            });
+            try {
+                const res = await fetch(`/api/moderar/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ estadoModeracion: nuevoEstado })
+                });
 
-            // Verifica si la actualización fue exitosa
-            if (res.ok) {
-                alert("✅ Estado actualizado correctamente");
-            } else {
-                alert("❌ Error al actualizar estado");
+                if (!res.ok) {
+                    throw new Error('Error en la respuesta del servidor');
+                }
+
+                // Mostrar notificación de éxito
+                const toast = document.createElement('div');
+                toast.className = 'position-fixed bottom-0 end-0 p-3';
+                toast.style.zIndex = '11';
+                toast.innerHTML = `
+                    <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+                        <div class="toast-header bg-success text-white">
+                            <strong class="me-auto">Éxito</strong>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+                        </div>
+                        <div class="toast-body">
+                            Estado actualizado correctamente.
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 3000);
+                
+                // Actualizar la fila visualmente
+                const select = document.querySelector(`select[onchange*="${id}"]`);
+                const row = select.closest('tr');
+                
+                // Actualizar clase de estado
+                const statusCell = row.querySelector('td:nth-child(5)');
+                statusCell.className = `status-${nuevoEstado}`;
+                statusCell.textContent = nuevoEstado;
+                
+            } catch (error) {
+                console.error('Error al actualizar estado:', error);
+                alert(`❌ Error al actualizar estado: ${error.message}`);
             }
         }
 
         // Ejecuta la carga de reportes al cargar el script
-        cargarReportes();
+        document.addEventListener('DOMContentLoaded', cargarReportes);
     </script>
 </body>
 </html>

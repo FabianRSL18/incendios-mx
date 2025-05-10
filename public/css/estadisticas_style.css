@@ -1,0 +1,39 @@
+:root {
+    --primary-color: #2c3e50;
+    --danger-color: #dc3545;
+    --warning-color: #ffc107;
+    }
+body {
+    background-color: #f8f9fa;
+}        
+.stats-container {
+    max-width: 900px;
+    margin: 30px auto;
+    padding: 20px;
+}        
+.page-title {
+    color: var(--danger-color);
+    margin-bottom: 30px;
+    text-align: center;
+    border-bottom: 2px solid var(--warning-color);
+    padding-bottom: 10px;
+}        
+.chart-card {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    padding: 20px;
+    margin-bottom: 30px;
+}        
+.refresh-info {
+    text-align: center;
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin-top: 15px;
+}        
+.data-info {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 20px;
+}
