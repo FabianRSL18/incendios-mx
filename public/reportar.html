@@ -38,24 +38,31 @@
     </form>
 
     <script>
+        // Ejecuta el código cuando se haya cargado completamente la página
         window.onload = function () {
+            // Verifica si el navegador soporta geolocalización
             if ("geolocation" in navigator) {
                 navigator.geolocation.getCurrentPosition(
                     async function (position) {
+                        // Obtiene las coordenadas actuales del usuario
                         const lat = position.coords.latitude;
                         const lng = position.coords.longitude;
+
+                        // Asigna latitud y longitud a los campos ocultos del formulario
                         document.getElementById('latitud').value = lat;
                         document.getElementById('longitud').value = lng;
                         console.log('📍 Coordenadas listas:', lat, lng);
 
-                        // Reverse Geocoding con Nominatim
+                        // Realiza Reverse Geocoding con Nominatim para obtener estado y municipio
                         try {
                             const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=es`);
                             const data = await response.json();
 
+                            // Extrae el estado y el municipio del objeto de dirección
                             const estado = data.address.state || '';
                             const municipio = data.address.city || data.address.town || data.address.village || data.address.county || '';
 
+                            // Llena los campos de estado y municipio automáticamente
                             document.getElementById('estado').value = estado;
                             document.getElementById('municipio').value = municipio;
 
@@ -73,48 +80,54 @@
             }
         };
 
+        // Manejador del envío del formulario de reporte
         document.getElementById('reporteForm').addEventListener('submit', async function (e) {
-            e.preventDefault();
-    
+            e.preventDefault(); // Evita que el formulario se envíe de forma tradicional
+
+            // Captura los valores ingresados
             const descripcion = document.getElementById('descripcion').value.trim();
             const lat = document.getElementById('latitud').value;
             const lng = document.getElementById('longitud').value;
-    
-            // Validación básica
+
+            // Validación básica de los campos requeridos
             if (!descripcion || descripcion.length < 10) {
                 alert("Por favor describe el incendio con al menos 10 caracteres.");
                 return;
             }
-    
+
             if (!lat || !lng) {
                 alert("Ubicación no disponible. Intenta de nuevo.");
                 return;
             }
-    
+
+            // Desactiva el botón de envío para evitar múltiples envíos
             const boton = this.querySelector('button[type="submit"]');
             boton.disabled = true;
             boton.textContent = "Enviando...";
-    
+
+            // Prepara los datos del formulario para enviar con multipart/form-data
             const formData = new FormData(this);
-    
+
             try {
+                // Enviar los datos del reporte a la API del servidor
                 const response = await fetch('/api/reportar', {
                     method: 'POST',
                     body: formData
                 });
-    
+
                 const data = await response.json();
                 console.log('✅ Reporte enviado:', data);
                 alert("Gracias por tu reporte.");
-                this.reset();
+                this.reset(); // Limpia el formulario después del envío
             } catch (error) {
                 console.error('❌ Error al enviar reporte:', error);
                 alert("Hubo un problema al enviar el reporte.");
             } finally {
+                // Restaura el botón de envío
                 boton.disabled = false;
                 boton.textContent = "Enviar Reporte";
             }
         });
-    </script>    
+    </script>
 </body>
 </html>

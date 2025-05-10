@@ -46,50 +46,57 @@
     </table>
 
     <script>
+        // Función que carga los reportes desde la API y los muestra en una tabla
         async function cargarReportes() {
-        const res = await fetch('/api/reportes');
-        const reportes = await res.json();
-        const tbody = document.querySelector('#tablaReportes tbody');
-        tbody.innerHTML = '';
+            const res = await fetch('/api/reportes');             // Solicita los reportes al servidor
+            const reportes = await res.json();                    // Convierte la respuesta a JSON
+            const tbody = document.querySelector('#tablaReportes tbody'); // Selecciona el cuerpo de la tabla
+            tbody.innerHTML = '';                                 // Limpia la tabla antes de llenarla
 
-        reportes.forEach(r => {
-            const tr = document.createElement('tr');
+            // Recorre los reportes recibidos
+            reportes.forEach(r => {
+                const tr = document.createElement('tr');          // Crea una fila de tabla
 
-            tr.innerHTML = `
-            <td>${new Date(r.fecha).toLocaleString()}</td>
-            <td>${r.descripcion}</td>
-            <td>${r.estado || 'N/D'}</td>
-            <td>${r.municipio || 'N/D'}</td>
-            <td>${r.coordenadas.lat.toFixed(4)}, ${r.coordenadas.lng.toFixed(4)}</td>
-            <td>${r.imagen ? `<a href="${r.imagen}" target="_blank">Ver</a>` : 'Sin imagen'}</td>
-            <td>
-                <select onchange="actualizarEstado('${r._id}', this.value)">
-                <option value="pendiente" ${r.estadoModeracion === 'pendiente' ? 'selected' : ''}>Pendiente</option>
-                <option value="revisado" ${r.estadoModeracion === 'revisado' ? 'selected' : ''}>Revisado</option>
-                <option value="falso" ${r.estadoModeracion === 'falso' ? 'selected' : ''}>Falso</option>
-                </select>
-            </td>
-            `;
-            tbody.appendChild(tr);
-        });
+                // Inserta el contenido HTML en cada celda
+                tr.innerHTML = `
+                    <td>${new Date(r.fecha).toLocaleString()}</td>           <!-- Fecha con formato legible -->
+                    <td>${r.descripcion}</td>                                 <!-- Descripción del incidente -->
+                    <td>${r.estado || 'N/D'}</td>                             <!-- Estado (o "N/D" si no está definido) -->
+                    <td>${r.municipio || 'N/D'}</td>                          <!-- Municipio (o "N/D") -->
+                    <td>${r.coordenadas.lat.toFixed(4)}, ${r.coordenadas.lng.toFixed(4)}</td>  <!-- Coordenadas -->
+                    <td>${r.imagen ? `<a href="${r.imagen}" target="_blank">Ver</a>` : 'Sin imagen'}</td> <!-- Imagen (si existe) -->
+                    <td>
+                        <select onchange="actualizarEstado('${r._id}', this.value)">
+                            <option value="pendiente" ${r.estadoModeracion === 'pendiente' ? 'selected' : ''}>Pendiente</option>
+                            <option value="revisado" ${r.estadoModeracion === 'revisado' ? 'selected' : ''}>Revisado</option>
+                            <option value="falso" ${r.estadoModeracion === 'falso' ? 'selected' : ''}>Falso</option>
+                        </select>
+                    </td>
+                `;
+
+                tbody.appendChild(tr); // Añade la fila a la tabla
+            });
         }
 
+        // Función que actualiza el estado de moderación del reporte
         async function actualizarEstado(id, nuevoEstado) {
-        const res = await fetch(`/api/moderar/${id}`, {
-            method: 'PUT',
-            headers: {
-            'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ estadoModeracion: nuevoEstado })
-        });
+            const res = await fetch(`/api/moderar/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ estadoModeracion: nuevoEstado })  // Se envía el nuevo estado en el cuerpo de la solicitud
+            });
 
-        if (res.ok) {
-            alert("✅ Estado actualizado correctamente");
-        } else {
-            alert("❌ Error al actualizar estado");
-        }
+            // Verifica si la actualización fue exitosa
+            if (res.ok) {
+                alert("✅ Estado actualizado correctamente");
+            } else {
+                alert("❌ Error al actualizar estado");
+            }
         }
 
+        // Ejecuta la carga de reportes al cargar el script
         cargarReportes();
     </script>
 </body>

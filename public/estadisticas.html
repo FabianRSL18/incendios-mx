@@ -32,47 +32,72 @@
     </div>
 
     <script>
-        // Cargar el JSON generado por R
-        fetch('/data/estadisticas.json')
-            .then(response => response.json())
-            .then(data => {
-                const ctx = document.getElementById('graficaIncendios').getContext('2d');
+        let grafica;
 
-                const grafica = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: data.labels,
-                        datasets: [{
-                            label: 'Cantidad de noticias por estado',
-                            data: data.values,
-                            backgroundColor: 'rgba(255, 99, 132, 0.5)',
-                            borderColor: 'rgba(255, 99, 132, 1)',
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        scales: {
-                            y: {
-                                beginAtZero: true
-                            }
-                        },
-                        plugins: {
-                            legend: {
-                                display: false
+        function cargarEstadisticas() {
+            fetch('/api/estadisticas-dinamicas')
+                .then(response => response.json())
+                .then(data => {
+                    // Ordenar de mayor a menor por cantidad
+                    const combinado = data.labels.map((label, i) => ({
+                        label: label,
+                        value: data.values[i]
+                    })).sort((a, b) => b.value - a.value);
+
+                    const labelsOrdenados = combinado.map(e => e.label);
+                    const valoresOrdenados = combinado.map(e => e.value);
+
+                    if (!grafica) {
+                        const ctx = document.getElementById('graficaIncendios').getContext('2d');
+
+                        grafica = new Chart(ctx, {
+                            type: 'bar',
+                            data: {
+                                labels: labelsOrdenados,
+                                datasets: [{
+                                    label: 'Cantidad de incendios por estado',
+                                    data: valoresOrdenados,
+                                    backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                                    borderColor: 'rgba(255, 99, 132, 1)',
+                                    borderWidth: 1
+                                }]
                             },
-                            tooltip: {
-                                callbacks: {
-                                    label: context => `Cantidad: ${context.parsed.y}`
+                            options: {
+                                responsive: true,
+                                scales: {
+                                    y: {
+                                        beginAtZero: true
+                                    }
+                                },
+                                plugins: {
+                                    legend: {
+                                        display: false
+                                    },
+                                    tooltip: {
+                                        callbacks: {
+                                            label: context => `Cantidad: ${context.parsed.y}`
+                                        }
+                                    }
                                 }
                             }
-                        }
+                        });
+                    } else {
+                        grafica.data.labels = labelsOrdenados;
+                        grafica.data.datasets[0].data = valoresOrdenados;
+                        grafica.update();
                     }
+                })
+                .catch(error => {
+                    console.error('❌ Error al cargar estadísticas dinámicas:', error);
                 });
-            })
-            .catch(error => {
-                console.error('Error al cargar datos de estadísticas:', error);
-            });
+        }
+
+        // Cargar inicialmente
+        cargarEstadisticas();
+
+        // Refrescar cada 5 segundos
+        setInterval(cargarEstadisticas, 3000);
     </script>
+
 </body>
 </html>

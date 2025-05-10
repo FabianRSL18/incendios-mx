@@ -19,39 +19,47 @@
     <div id="noticias"></div>
 
     <script>
+        // Realiza una solicitud a la API local que devuelve las noticias procesadas
         fetch('http://localhost:3000/api/incendios')
-        .then(res => res.json())
-        .then(data => {
-            const contenedor = document.getElementById('noticias');
+            .then(res => res.json()) // Se interpreta la respuesta como JSON
+            .then(data => {
+                const contenedor = document.getElementById('noticias'); // Contenedor donde se insertarán las noticias
 
-            // Validar si es un arreglo
-            if (!Array.isArray(data)) {
-            contenedor.innerHTML = "<p>Ocurrió un error en el servidor. Intenta más tarde.</p>";
-            console.error("⚠️ Respuesta inesperada:", data);
-            return;
-            }
+                // Verificación de tipo de respuesta
+                if (!Array.isArray(data)) {
+                    contenedor.innerHTML = "<p>Ocurrió un error en el servidor. Intenta más tarde.</p>";
+                    console.error("⚠️ Respuesta inesperada:", data);
+                    return;
+                }
 
-            if (data.length === 0) {
-            contenedor.innerHTML = "<p>No se encontraron noticias recientes.</p>";
-            } else {
-            data.forEach(nota => {
-                const div = document.createElement('div');
-                div.className = "card";
-                div.innerHTML = `
-                <h2>${nota.titulo}</h2>
-                <p><strong>Fuente:</strong> ${nota.fuente || 'Desconocida'}</p>
-                <p>${nota.resumen}</p>
-                <a href="${nota.link}" target="_blank">Leer más</a>
-                `;
-                contenedor.appendChild(div);
+                // Si no hay noticias disponibles
+                if (data.length === 0) {
+                    contenedor.innerHTML = "<p>No se encontraron noticias recientes.</p>";
+                } else {
+                    // Si hay noticias, recorrer el arreglo y generar una tarjeta por cada una
+                    data.forEach(nota => {
+                        const div = document.createElement('div');
+                        div.className = "card"; // Clase CSS para dar estilo
+
+                        // Se inserta el contenido HTML en la tarjeta
+                        div.innerHTML = `
+                            <h2>${nota.titulo}</h2>
+                            <p><strong>Fuente:</strong> ${nota.fuente || 'Desconocida'}</p>
+                            <p>${nota.resumen}</p>
+                            <a href="${nota.link}" target="_blank">Leer más</a>
+                        `;
+
+                        // Se añade la tarjeta al contenedor
+                        contenedor.appendChild(div);
+                    });
+                }
+            })
+            .catch(err => {
+                // En caso de error en la petición (por ejemplo, si el servidor está caído)
+                document.getElementById('noticias').innerHTML = "<p>Error al cargar noticias.</p>";
+                console.error("❌ Error en fetch:", err);
             });
-            }
-        })
-        .catch(err => {
-            document.getElementById('noticias').innerHTML = "<p>Error al cargar noticias.</p>";
-            console.error("❌ Error en fetch:", err);
-        });
-
     </script>
+
 </body>
 </html>

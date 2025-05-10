@@ -108,28 +108,34 @@
 
     <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
     <script>
+        // Crear un mapa centrado en México con zoom inicial 5
         const mapa = L.map('mapa').setView([23.6345, -102.5528], 5);
-    
+
+        // Capa base del mapa usando OpenStreetMap
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: 'Datos: OpenStreetMap + Web Scraping',
             maxZoom: 8,
             minZoom: 4
         }).addTo(mapa);
-    
+
+        // Capa para los reportes ciudadanos (se puede activar/desactivar)
         const capaReportes = L.layerGroup().addTo(mapa);
-    
+
+        // Función que asigna color según cantidad de noticias por estado
         function getColor(cantidad) {
             return cantidad > 15 ? '#800026' :
                 cantidad > 10 ? '#BD0026' :
                 cantidad > 5  ? '#E31A1C' :
                 cantidad > 2  ? '#FC4E2A' :
                 cantidad > 0  ? '#FD8D3C' :
-                                '#f0f0f0';
+                                '#f0f0f0'; // gris claro si no hay noticias
         }
-    
+
+        // Estilo por estado (usado en L.geoJSON)
         function style(feature, rankingMap) {
             const estado = feature.properties.NOM_ENT.toLowerCase();
             const cantidad = rankingMap[estado] || 0;
+
             return {
                 fillColor: getColor(cantidad),
                 weight: 1,
@@ -137,105 +143,110 @@
                 fillOpacity: cantidad > 0 ? 0.75 : 0.2
             };
         }
-    
-        // Cargar mapa y noticias
+
+        // Cargar el mapa de estados (GeoJSON) y el ranking de noticias por estado
         Promise.all([
-            fetch('/data/mexico.json').then(res => res.json()),
-            fetch('http://localhost:3000/api/ranking-estados').then(res => res.json())
+            fetch('/data/mexico.json').then(res => res.json()),                          // Mapa de estados
+            fetch('http://localhost:3000/api/ranking-estados').then(res => res.json())   // Datos de ranking
         ])
         .then(([geojson, ranking]) => {
+            // Convertir ranking en un objeto { estado: cantidad }
             const rankingMap = {};
             ranking.forEach(d => {
-            rankingMap[d.estado.toLowerCase()] = d.cantidad;
+                rankingMap[d.estado.toLowerCase()] = d.cantidad;
             });
-    
+
+            // Dibujar el mapa de estados con estilos dinámicos
             L.geoJSON(geojson, {
                 style: feature => style(feature, rankingMap),
                 onEachFeature: (feature, layer) => {
                     const estado = feature.properties.NOM_ENT;
                     const cantidad = rankingMap[estado.toLowerCase()] || 0;
-        
+
+                    // Popup con nombre del estado y cantidad de noticias
                     layer.bindPopup(`<strong>${estado}</strong><br>Noticias de incendios: ${cantidad}`);
-        
+
+                    // Al hacer clic, se cargan noticias específicas de ese estado
                     layer.on('click', () => {
-                    fetch(`/api/noticias-por-estado/${encodeURIComponent(estado)}`)
-                        .then(res => res.json())
-                        .then(noticias => {
-                        const panel = document.getElementById('panel-noticias');
-                        const titulo = document.getElementById('titulo-estado');
-                        const lista = document.getElementById('lista-noticias');
-        
-                        titulo.textContent = `Noticias de ${estado}`;
-                        lista.innerHTML = '';
-        
-                        if (noticias.length === 0) {
-                            lista.innerHTML = '<li>No hay noticias disponibles.</li>';
-                        } else {
-                            noticias.forEach(n => {
-                            const li = document.createElement('li');
-                            const link = document.createElement('a');
-                            link.href = n.link;
-                            link.textContent = n.titulo;
-                            link.target = '_blank';
-                            li.appendChild(link);
-                            lista.appendChild(li);
+                        fetch(`/api/noticias-por-estado/${encodeURIComponent(estado)}`)
+                            .then(res => res.json())
+                            .then(noticias => {
+                                const panel = document.getElementById('panel-noticias');
+                                const titulo = document.getElementById('titulo-estado');
+                                const lista = document.getElementById('lista-noticias');
+
+                                titulo.textContent = `Noticias de ${estado}`;
+                                lista.innerHTML = '';
+
+                                if (noticias.length === 0) {
+                                    lista.innerHTML = '<li>No hay noticias disponibles.</li>';
+                                } else {
+                                    noticias.forEach(n => {
+                                        const li = document.createElement('li');
+                                        const link = document.createElement('a');
+                                        link.href = n.link;
+                                        link.textContent = n.titulo;
+                                        link.target = '_blank';
+                                        li.appendChild(link);
+                                        lista.appendChild(li);
+                                    });
+                                }
+
+                                panel.style.display = 'block';
                             });
-                        }
-        
-                        panel.style.display = 'block';
-                        });
                     });
                 }
             }).addTo(mapa);
 
-            // Leyenda
+            // Agrega leyenda de colores
             const legend = L.control({ position: 'bottomright' });
             legend.onAdd = function () {
-            const div = L.DomUtil.create('div', 'legend');
-            const grades = [0, 1, 3, 6, 11, 16];
-            for (let i = 0; i < grades.length - 1; i++) {
-                div.innerHTML +=
-                '<i style="background:' + getColor(grades[i + 1]) + '"></i> ' +
-                `${grades[i]}&ndash;${grades[i + 1] - 1}<br>`;
-            }
-            div.innerHTML += '<i style="background:' + getColor(16) + '"></i> 16+';
-            return div;
+                const div = L.DomUtil.create('div', 'legend');
+                const grades = [0, 1, 3, 6, 11, 16];
+                for (let i = 0; i < grades.length - 1; i++) {
+                    div.innerHTML +=
+                        '<i style="background:' + getColor(grades[i + 1]) + '"></i> ' +
+                        `${grades[i]}&ndash;${grades[i + 1] - 1}<br>`;
+                }
+                div.innerHTML += '<i style="background:' + getColor(16) + '"></i> 16+';
+                return div;
             };
             legend.addTo(mapa);
         })
         .catch(err => {
             console.error("Error cargando mapa o datos:", err);
         });
-    
+
+        // Función para cargar y mostrar reportes ciudadanos como marcadores
         function cargarReportesCiudadanos() {
             fetch('/api/reportes')
-            .then(res => res.json())
-            .then(reportes => {
-                capaReportes.clearLayers(); // Limpiar marcadores anteriores
+                .then(res => res.json())
+                .then(reportes => {
+                    capaReportes.clearLayers(); // Limpiar marcadores anteriores
 
-                reportes
-                .filter(r => r.estadoModeracion === 'pendiente' || r.estadoModeracion === 'revisado')
-                .forEach(r => {
-                    if (r.coordenadas && r.coordenadas.lat && r.coordenadas.lng) {
-                    const contenidoPopup = `
-                        <strong>Reporte ciudadano</strong><br>
-                        ${r.descripcion || 'Sin descripción'}
-                        ${r.imagen ? `<br><img src="${r.imagen}" alt="Imagen del reporte" style="width:100%;max-width:200px;margin-top:8px;border-radius:6px;">` : ''}
-                        <br><small>Estado: ${r.estado || 'N/D'} | Municipio: ${r.municipio || 'N/D'}</small>
-                        <br><small>Fecha: ${new Date(r.fecha).toLocaleString()}</small>
-                        <br><small><strong>Moderación:</strong> ${r.estadoModeracion}</small>
-                    `;
+                    reportes
+                        .filter(r => r.estadoModeracion === 'pendiente' || r.estadoModeracion === 'revisado')
+                        .forEach(r => {
+                            if (r.coordenadas && r.coordenadas.lat && r.coordenadas.lng) {
+                                const contenidoPopup = `
+                                    <strong>Reporte ciudadano</strong><br>
+                                    ${r.descripcion || 'Sin descripción'}
+                                    ${r.imagen ? `<br><img src="${r.imagen}" alt="Imagen del reporte" style="width:100%;max-width:200px;margin-top:8px;border-radius:6px;">` : ''}
+                                    <br><small>Estado: ${r.estado || 'N/D'} | Municipio: ${r.municipio || 'N/D'}</small>
+                                    <br><small>Fecha: ${new Date(r.fecha).toLocaleString()}</small>
+                                    <br><small><strong>Moderación:</strong> ${r.estadoModeracion}</small>
+                                `;
 
-                    L.marker([r.coordenadas.lat, r.coordenadas.lng])
-                        .addTo(capaReportes)
-                        .bindPopup(contenidoPopup);
-                    }
-                });
-            })
-            .catch(err => console.error('❌ Error al cargar reportes ciudadanos:', err));
+                                L.marker([r.coordenadas.lat, r.coordenadas.lng])
+                                    .addTo(capaReportes)
+                                    .bindPopup(contenidoPopup);
+                            }
+                        });
+                })
+                .catch(err => console.error('❌ Error al cargar reportes ciudadanos:', err));
         }
 
-        // Checkbox para alternar la visibilidad
+        // Listener del checkbox para mostrar/ocultar los reportes ciudadanos
         document.getElementById('toggleReportes').addEventListener('change', function () {
             if (this.checked) {
                 mapa.addLayer(capaReportes);
@@ -244,22 +255,26 @@
                 mapa.removeLayer(capaReportes);
             }
         });
-    
+
+        // Cierra el panel lateral de noticias
         function cerrarPanel() {
             document.getElementById('panel-noticias').style.display = 'none';
             document.getElementById('lista-noticias').innerHTML = '';
             document.getElementById('titulo-estado').textContent = '';
         }
-    
-        // Cargar los reportes al iniciar si está activado
+
+        // Si el checkbox está activo al cargar la página, se cargan los reportes ciudadanos
         if (document.getElementById('toggleReportes').checked) {
             cargarReportesCiudadanos();
         }
     </script>
+
+    <!-- Recarga automática del mapa cada 5 minutos -->
     <script>
         setInterval(() => {
             location.reload();
-        }, 5 * 60 * 1000); // cada 5 minutos
+        }, 5 * 60 * 1000); // 5 minutos
     </script>
+
 </body>
 </html>
