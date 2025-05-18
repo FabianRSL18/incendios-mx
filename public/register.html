@@ -1,54 +1,45 @@
-<!DOCTYPE html><html lang="es">
-<head><meta charset="utf-8"><title>Registro</title>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Registro | incendiosMX</title>
+  <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-</head><body>
+</head>
+<body>
 <div class="container py-5" style="max-width:400px;">
   <h2 class="mb-4">Crear Cuenta</h2>
   <form id="registerForm" action="/auth/register" method="POST" enctype="multipart/form-data">
     <div class="mb-3">
-      <label>Nombre</label>
-      <input type="text" name="firstName" class="form-control" required>
+      <label for="firstName" class="form-label">Nombre</label>
+      <input type="text" id="firstName" name="firstName" class="form-control" required>
     </div>
     <div class="mb-3">
-      <label>Apellidos</label>
-      <input type="text" name="lastName" class="form-control" required>
+      <label for="lastName" class="form-label">Apellidos</label>
+      <input type="text" id="lastName" name="lastName" class="form-control" required>
     </div>
     <div class="mb-3">
-      <label>Correo Electrónico</label>
-      <input type="email" name="email" class="form-control" required>
+      <label for="email" class="form-label">Correo Electrónico</label>
+      <input type="email" id="email" name="email" class="form-control" required>
     </div>
     <div class="mb-3">
-      <label>Usuario</label>
-      <input type="text" name="username" class="form-control" required>
+      <label for="username" class="form-label">Usuario</label>
+      <input type="text" id="username" name="username" class="form-control" required>
     </div>
     <div class="mb-3">
-      <label>Contraseña</label>
-      <input type="password" name="password" class="form-control" required minlength="6">
+      <label for="password" class="form-label">Contraseña</label>
+      <input type="password" id="password" name="password" class="form-control" required minlength="6">
     </div>
     <div class="mb-3">
-      <label>Foto de Perfil (JPG/PNG)</label>
-      <input type="file" name="avatar" class="form-control" accept=".jpg,.jpeg,.png">
+      <label for="avatar" class="form-label">Foto de Perfil (JPG/PNG)</label>
+      <input type="file" id="avatar" name="avatar" class="form-control" accept=".jpg,.jpeg,.png">
     </div>
-    <button class="btn btn-success w-100">Registrarse</button>
+    <button type="submit" class="btn btn-success w-100">Registrarse</button>
     <div id="error" class="text-danger mt-2"></div>
   </form>
-
 </div>
 
-<script>
-  document.getElementById('registerForm').addEventListener('submit', async e => {
-    e.preventDefault();
-    const form = e.target;
-    const body = new URLSearchParams(new FormData(form));
-    const resp = await fetch('/auth/register', {
-      method: 'POST',
-      body,
-    });
-    if (resp.ok) {
-      window.location = '/login';
-    } else {
-      document.getElementById('error').textContent = 'Error al crear usuario';
-    }
-  });
-</script>
-</body></html>
+<!-- Bootstrap JS (opcional si no necesitas JS aquí) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
