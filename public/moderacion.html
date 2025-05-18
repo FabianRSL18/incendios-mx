@@ -146,17 +146,13 @@
         // Función que actualiza el estado de moderación del reporte
         async function actualizarEstado(id, nuevoEstado) {
             try {
-                const res = await fetch(`/api/moderar/${id}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                const res = await fetch(`/api/reportes/${id}/moderar`, {
+                    method: 'PATCH',
+                    credentials: 'same-origin',   // para incluir la cookie de sesión
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ estadoModeracion: nuevoEstado })
                 });
-
-                if (!res.ok) {
-                    throw new Error('Error en la respuesta del servidor');
-                }
+                if (!res.ok) throw new Error('Error en la respuesta del servidor');
 
                 // Mostrar notificación de éxito
                 const toast = document.createElement('div');

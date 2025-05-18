@@ -2,7 +2,7 @@
 const axios = require('axios');
 
 // Clave de acceso (API key) para usar el servicio de noticias GNews
-const API_KEY = '4732133930d802f4acf9b7413fc4132a';
+const API_KEY = '2b4034ca6629bf8a9c7c8f0dfdde4d7b';
 
 // Función asincrónica que consulta noticias sobre incendios forestales en México desde la API de GNews
 async function obtenerNoticiasGNews() {

@@ -1,0 +1,42 @@
+<!DOCTYPE html><html lang="es">
+<head><meta charset="utf-8"><title>Login</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head><body>
+<div class="container py-5" style="max-width:400px;">
+    <h2 class="mb-4">Iniciar Sesión</h2>
+    <form id="loginForm" action="/auth/login" method="post">
+        <div class="mb-3">
+            <label>Usuario</label>
+            <input type="text" name="username" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label>Contraseña</label>
+            <input type="password" name="password" class="form-control" required>
+        </div>
+        <button class="btn btn-primary w-100">Entrar</button>
+        <p class="mt-3 text-center">
+            ¿No tienes cuenta? <a href="register.html">Regístrate</a>
+        </p>
+        <div id="error" class="text-danger mt-2"></div>
+    </form>
+</div>
+
+<script>
+    document.getElementById('loginForm').addEventListener('submit', async e => {
+        e.preventDefault();
+        const form = e.target;
+        const body = new URLSearchParams(new FormData(form));
+        const resp = await fetch('/auth/login', {
+            method: 'POST',
+            body,
+        });
+        if (resp.ok) {
+            // Redirigir a donde vino o a /
+            const redirectTo = new URLSearchParams(window.location.search).get('returnTo') || '/';
+            window.location = redirectTo;
+        } else {
+            document.getElementById('error').textContent = 'Usuario o contraseña inválidos';
+        }
+    });
+</script>
+</body></html>

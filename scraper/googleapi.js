@@ -2,7 +2,7 @@
 const axios = require('axios');
 
 // Clave de API de Google Custom Search
-const API_KEY = 'AIzaSyCyZnooLbuHb6_ZoFOrJX6XQRbvK4jwHns'; 
+const API_KEY = 'AIzaSyDZPCZhNY_Xtfd7fwIGXj2CKIWD7cosq7Y';
 
 // ID del motor de búsqueda personalizado (CX) configurado en Google Custom Search
 const CX_ID = 'e1828373b377948db';     
