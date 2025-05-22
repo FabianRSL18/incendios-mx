@@ -1,55 +1,50 @@
-// server.js
+// === 1. Módulos base ===
+const express  = require('express');            // Framework para crear servidor web
+const cors     = require('cors');               // Permite solicitudes desde otros dominios
+const session  = require('express-session');    // Manejo de sesiones de usuario
+const passport = require('passport');           // Autenticación
+const path     = require('path');               // Utilidades para manejar rutas
+const { exec } = require('child_process');      // Ejecuta comandos del sistema (útil para R)
+const fs       = require('fs');                 // Lectura/escritura de archivos
+const multer   = require('multer');             // Middleware para subir archivos (ej. imágenes)
+const fetch    = require('node-fetch');         // Cliente HTTP para consumir APIs (ej. geolocalización)
 
-// 1. Módulos base
-const express  = require('express');
-const cors     = require('cors');
-const session  = require('express-session');
-const passport = require('passport');
-const path     = require('path');
-const { exec } = require('child_process');
-const fs       = require('fs');
-const multer   = require('multer');
-const fetch    = require('node-fetch');
+// === 2. Módulos propios del proyecto ===
+const { obtenerNoticias }      = require('./scraper/scraper');       // Scraper de noticias
+const { obtenerRankingPorEstado, Noticia, Reporte } = require('./db/db'); // Modelos y funciones DB
+const { analizarNoticiasConR } = require('./analizar');              // Análisis R de noticias
 
-// 2. Importa tu scraper y modelos
-const { obtenerNoticias }      = require('./scraper/scraper');
-const { obtenerRankingPorEstado, Noticia, Reporte } = require('./db/db');
-const { analizarNoticiasConR } = require('./analizar');
-
-// 3. Config Passport
+// === 3. Configuración de Passport para autenticación ===
 require('./config/passport')(passport);
 
-// 4. Inicializa Express
+// === 4. Inicialización de Express ===
 const app  = express();
 const PORT = 3000;
 
-// 5. Middleware de parsing y CORS
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+// === 5. Middlewares globales ===
+app.use(cors());                                  // Permitir CORS general
+app.use(express.json());                          // Parseo de JSON
+app.use(express.urlencoded({ extended: false })); // Parseo de formularios
 
-// 6. Configura sesión y Passport
+// === 6. Configuración de sesión y Passport con CORS seguro ===
 app.use(cors({
-    origin: 'http://localhost:3000',       // o tu dominio exacto
-    credentials: true   // <–– permite recibir cookies en CORS
+    origin: 'http://localhost:3000',
+    credentials: true
 }));
 app.use(session({
-    secret: 'tu_clave_secreta',
+    secret: 'tu_clave_secreta',  // Cambiar en producción
     resave: false,
     saveUninitialized: false,
-    cookie: { sameSite: 'lax' /* o lo que necesites */ }
+    cookie: { sameSite: 'lax' }  // Política de cookies
 }));
 app.use(passport.initialize());
 app.use(passport.session());
 
-// 7. Helpers de autorización
+// === 7. Middleware de protección de rutas ===
 const { ensureAuthenticated, ensureAdmin } = require('./middleware/auth');
 
-// 8. Exponer estado de autenticación al frontend
-// justo después de app.use(passport.session());
-// 8. Exponer estado de autenticación al frontend
+// === 8. Estado de autenticación (para el frontend) ===
 app.get('/api/auth/status', (req, res) => {
-    // Indicamos al navegador que no guarde cache
     res.set('Cache-Control', 'no-store');
     if (req.isAuthenticated()) {
         const { firstName, lastName, email, avatar, role } = req.user;
@@ -64,25 +59,28 @@ app.get('/api/auth/status', (req, res) => {
     res.json({ loggedIn: false });
 });
 
-
-// 9. Monta rutas de auth (/auth/register, /auth/login, /auth/logout)
+// === 9. Rutas de autenticación ===
 app.use('/auth', require('./routes/auth'));
 
-// 10. Sirve formularios de login y registro
+// === 10. Páginas públicas de login y registro ===
 app.get('/login',    (req, res) => res.sendFile(path.join(__dirname, 'public/login.html')));
 app.get('/register', (req, res) => res.sendFile(path.join(__dirname, 'public/register.html')));
 
-// 11. Protege reportar.html: sólo usuarios autenticados
-// Protege reportar.html
+// === 11. Página de reportes (sólo autenticados) ===
 app.get('/reportar.html', ensureAuthenticated, (req, res) => {
     res.sendFile(path.join(__dirname, 'public/reportar.html'));
 });
 
-// RUTA UNIFICADA y PROTEGIDA para traer todos los reportes
-app.get('/api/reportes', ensureAdmin, async (req, res) => {
+// === API: obtener reportes (con restricciones según el rol) ===
+app.get('/api/reportes', async (req, res) => {
     console.log('→ GET /api/reportes recibido');
     try {
-        const reportes = await Reporte.find().sort({ fecha: -1 });
+        let reportes;
+        if (req.isAuthenticated?.() && req.user?.role === 'admin') {
+            reportes = await Reporte.find().sort({ fecha: -1 });
+        } else {
+            reportes = await Reporte.find({ estadoModeracion: 'revisado' }).sort({ fecha: -1 });
+        }
         res.json(reportes);
     } catch (err) {
         console.error('❌ Error GET /api/reportes:', err);
@@ -90,26 +88,29 @@ app.get('/api/reportes', ensureAdmin, async (req, res) => {
     }
 });
 
-// 12. Resto de archivos estáticos (css, js, imágenes, etc.)
+// === 12. Archivos estáticos (CSS, JS, imágenes, etc.) ===
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 13. Configuración de multer para uploads
+// === 13. Configuración de multer para subir imágenes ===
 const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, 'public/uploads/'),
     filename:    (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
 });
 const upload = multer({ storage });
 
-// 14. Función de cron “actualizarTodo”
+// === 14. Función automática: analizar y actualizar estadísticas con R ===
 async function actualizarTodo() {
     try {
         await analizarNoticiasConR();
         console.log('✅ Noticias analizadas correctamente.');
 
+        // Ejecuta script R para ranking de estados
         exec('Rscript R/analisis_incendios.R noticias_estado.json', (err, stdout) => {
             if (err) console.error('❌ Error analisis_incendios.R:', err.message);
             else    console.log('📊 Ranking actualizado:\n', stdout);
         });
+
+        // Ejecuta script R para estadísticas
         exec('Rscript R/estadisticas_incendios.R', (err) => {
             if (err) console.error('❌ Error estadisticas_incendios.R:', err.message);
             else    console.log('📈 Estadísticas actualizadas correctamente.');
@@ -120,10 +121,11 @@ async function actualizarTodo() {
     }
 }
 actualizarTodo();
-setInterval(actualizarTodo, 5 * 60 * 1000);
+setInterval(actualizarTodo, 5 * 60 * 1000); // Cada 5 minutos
 
-// 15. Tus endpoints API existentes
+// === 15. Endpoints de API ===
 
+// Noticias extraídas por scraping
 app.get('/api/incendios', async (req, res) => {
     try {
         const data = await obtenerNoticias();
@@ -134,6 +136,7 @@ app.get('/api/incendios', async (req, res) => {
     }
 });
 
+// Ejecuta análisis en R manualmente
 app.get('/api/analisis-r', (req, res) => {
     exec('Rscript R/analisis_incendios.R', (error, stdout, stderr) => {
         if (error) return res.status(500).json({ error: 'Error al ejecutar R' });
@@ -142,6 +145,7 @@ app.get('/api/analisis-r', (req, res) => {
     });
 });
 
+// Ranking de estados con más incendios
 app.get('/api/ranking-estados', async (req, res) => {
     try {
         const ranking = await obtenerRankingPorEstado();
@@ -152,6 +156,7 @@ app.get('/api/ranking-estados', async (req, res) => {
     }
 });
 
+// Función de ayuda para nombres de estado
 const normalizarEstado = nombre => {
     const mapa = {
         veracruz: "Veracruz De Ignacio De La Llave",
@@ -162,6 +167,7 @@ const normalizarEstado = nombre => {
     return mapa[nombre.toLowerCase()] || nombre;
 };
 
+// Filtrar noticias por estado
 app.get('/api/noticias-por-estado/:estado', async (req, res) => {
     try {
         const estado = normalizarEstado(req.params.estado);
@@ -173,16 +179,19 @@ app.get('/api/noticias-por-estado/:estado', async (req, res) => {
     }
 });
 
+// Genera estadísticas dinámicas combinando noticias y reportes
 app.get('/api/estadisticas-dinamicas', async (req, res) => {
     try {
         const noticias = await Noticia.find({}, 'estado');
         const reportes = await Reporte.find({ estadoModeracion: 'revisado' }, 'estado');
         const combinados = [...noticias, ...reportes];
-        const conteo    = {};
+
+        const conteo = {};
         combinados.forEach(doc => {
             const e = (doc.estado || '').toLowerCase();
             if (e) conteo[e] = (conteo[e] || 0) + 1;
         });
+
         res.json({
             labels: Object.keys(conteo).map(e => e.charAt(0).toUpperCase() + e.slice(1)),
             values: Object.values(conteo)
@@ -193,6 +202,7 @@ app.get('/api/estadisticas-dinamicas', async (req, res) => {
     }
 });
 
+// Estadísticas generales desde archivo generado por R
 app.get('/api/estadisticas', (req, res) => {
     exec('Rscript R/estadisticas_incendios.R', (error) => {
         if (error) return res.status(500).json({ error: 'Error al ejecutar R' });
@@ -204,15 +214,18 @@ app.get('/api/estadisticas', (req, res) => {
     });
 });
 
+// Reporte ciudadano de incendio (con foto + geolocalización)
 app.post('/api/reportar', upload.single('imagen'), async (req, res) => {
     try {
         const lat = parseFloat(req.body.lat);
         const lng = parseFloat(req.body.lng);
-        const r   = await fetch(
+
+        const r = await fetch(
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10&addressdetails=1`,
             { headers: { 'User-Agent': 'incendios-mx-reporter' } }
         );
         const json = await r.json();
+
         const nuevo = new Reporte({
             descripcion: req.body.descripcion,
             coordenadas: { lat, lng },
@@ -220,20 +233,25 @@ app.post('/api/reportar', upload.single('imagen'), async (req, res) => {
             estado:      json.address?.state,
             municipio:   json.address?.county || json.address?.city
         });
+
         await nuevo.save();
         res.status(201).json({ mensaje: 'Reporte recibido', id: nuevo._id });
+
     } catch (error) {
         console.error('❌ Error POST /api/reportar:', error);
         res.status(500).json({ error: 'Error en el servidor' });
     }
 });
 
+// Moderación de reportes: cambiar estado a 'pendiente', 'revisado' o 'falso'
 app.patch('/api/reportes/:id/moderar', async (req, res) => {
     const { id } = req.params;
     const { estadoModeracion } = req.body;
-    if (!['pendiente','revisado','falso'].includes(estadoModeracion)) {
+
+    if (!['pendiente', 'revisado', 'falso'].includes(estadoModeracion)) {
         return res.status(400).json({ error: 'Estado inválido' });
     }
+
     try {
         const upd = await Reporte.findByIdAndUpdate(id, { estadoModeracion }, { new: true });
         if (!upd) return res.status(404).json({ error: 'No encontrado' });
@@ -244,9 +262,7 @@ app.patch('/api/reportes/:id/moderar', async (req, res) => {
     }
 });
 
-
-
-// 16. Arranca servidor
+// === 16. Iniciar servidor ===
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });

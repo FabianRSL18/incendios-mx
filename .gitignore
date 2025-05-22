@@ -1,2 +1,4 @@
 node_modules/
 public/data/mexico.json
+noticias_estado.json
+public/data/estadisticas.json
